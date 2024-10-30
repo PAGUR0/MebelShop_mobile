@@ -66,8 +66,9 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-    implementation(libs.androidx.tv.material)
-    implementation(libs.sceneview)
-    implementation (libs.arsceneview)
-    implementation (libs.material3)
+
+    implementation("io.github.sceneview:sceneview:2.2.1")
+    implementation ("io.github.sceneview:arsceneview:2.2.1")
+    implementation ("androidx.compose.material3:material3:1.0.0")
+
 }
