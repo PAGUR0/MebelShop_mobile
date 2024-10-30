@@ -1,46 +1,35 @@
-@file:OptIn(ExperimentalTvMaterial3Api::class)
-
 package com.mebelshop.mebelshop_mobile
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.ImageDecoder
-import android.media.Image
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Text
-import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -51,16 +40,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.tv.material3.ExperimentalTvMaterial3Api
-import com.google.ar.core.ImageFormat
 import com.mebelshop.mebelshop_mobile.ar.AR2
 import com.mebelshop.mebelshop_mobile.ui.theme.AppTheme
 import com.mebelshop.mebelshop_mobile.ui.theme.AppTypography
@@ -87,53 +71,61 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    enum class CardType(){
-        Common, Liked, Discount, LikedDicsount
+    enum class CardType {
+        Common, Liked, Discount, LikedDiscount
     }
 
     @Composable
-    fun PhotoCarousel(photos: List<Int>, modifier: Modifier = Modifier){
+    fun PhotoCarousel(photos: List<String>, modifier: Modifier = Modifier){
         val pagerState = rememberPagerState(initialPage = 0){photos.size}
         HorizontalPager(
             state = pagerState,
-            modifier = modifier.width(256.dp)
+            modifier = modifier.width(128.dp)
         ){ page: Int ->
-            Image(painterResource(photos[page]), contentDescription = "example photo", modifier.size(256.dp, 256.dp))
+            val bitmapState = getImageFromAssets(photos[page])
+            if (null != bitmapState) {
+                val bitmap = bitmapState.asImageBitmap()
+                Image(
+                    bitmap,
+                    contentDescription = "example photo",
+                    modifier.size(128.dp, 128.dp)
+                )
+            }
         }
     }
 
     @Composable
-    fun MainCardItem(photos: List<Int>, cost: Int, name: String, id: Int, type: CardType){
+    fun MainCardItem(product: Product, type: CardType, modifier: Modifier){
         AppTheme {
             val colors = when(type){
                 CardType.Common -> CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
                 CardType.Liked -> CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.error)
-                CardType.LikedDicsount, CardType.Discount-> CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiary)
+                CardType.LikedDiscount, CardType.Discount-> CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiary)
             }
-            Card(shape = RoundedCornerShape(16), colors = colors){
+            Card(shape = RoundedCornerShape(16), colors = colors, modifier = modifier){
                 Box(modifier = Modifier.padding(16.dp)){
                     Column {
                         Box{
                             Box(contentAlignment = Alignment.Center) {
                                 PhotoCarousel(
-                                    photos, modifier = Modifier
+                                    product.images, modifier = Modifier
                                         .padding(bottom = 5.dp)
                                         .clip(
                                             RoundedCornerShape(16)
                                         )
                                 )
                             }
-                            Box(contentAlignment = Alignment.TopEnd, modifier = Modifier.size(256.dp)){
+                            Box(contentAlignment = Alignment.TopEnd, modifier = Modifier.size(128.dp)){
                                 val (icon, color) = when(type){
                                     CardType.Common, CardType.Discount -> listOf(Icons.Outlined.FavoriteBorder, Color.White)
-                                    CardType.Liked, CardType.LikedDicsount -> listOf(Icons.Filled.Favorite, Color.Red)
+                                    CardType.Liked, CardType.LikedDiscount -> listOf(Icons.Filled.Favorite, Color.Red)
                                 }
                                 Icon(imageVector = icon as ImageVector, tint = color as Color, contentDescription = null, modifier = Modifier.padding(16.dp))
                             }
                         }
                         Column {
-                            Text("$cost Р", fontWeight = AppTypography.titleSmall.fontWeight)
-                            Text(name, modifier = Modifier.width(256.dp), fontWeight = AppTypography.bodySmall.fontWeight, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("${product.price} Р", fontWeight = AppTypography.titleSmall.fontWeight)
+                            Text(product.name, modifier = Modifier.width(128.dp), fontWeight = AppTypography.bodySmall.fontWeight, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
@@ -142,44 +134,43 @@ class MainActivity : ComponentActivity() {
 
     }
 
-    @Preview
+    //@Preview
     @Composable
     fun MainCardPreview(){
         MainCardItem(
-            listOf(
-                R.drawable.img1,
-                R.drawable.img2,
-                R.drawable.img3),
-            7200,
-            "Стол для инвалидов-колясочников",
-            0,
-            CardType.LikedDicsount
+            DataMobile().listProduct!![0],
+            CardType.LikedDiscount,
+            modifier = Modifier
         )
     }
 
-
     @Composable
-    fun CategoryItem(category: CategoryProduct){
+    fun getImageFromAssets(name: String): Bitmap? {
         var bitmapState by remember{ mutableStateOf<Bitmap?>(null) }
         val context = LocalContext.current
 
         LaunchedEffect(Unit) {
-            bitmapState = BitmapFactory.decodeStream(context.assets.open(category.image))
+            bitmapState = BitmapFactory.decodeStream(context.assets.open(name))
         }
+        return bitmapState
+    }
+
+    @Composable
+    fun CategoryItem(category: CategoryProduct){
+        val bitmapState = getImageFromAssets(category.image)
         AppTheme{
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)){
-                if (null != bitmapState) {
-                    val bitmap = bitmapState!!.asImageBitmap()
-
-                    Box(modifier = Modifier.padding(16.dp)) {
-                        Column {
+                Box(modifier = Modifier.padding(4.dp)) {
+                    Column {
+                        if (null != bitmapState) {
+                            val bitmap = bitmapState.asImageBitmap()
                             Image(
                                 bitmap = bitmap,
                                 "assetsImage",
-                                modifier = Modifier.size(256.dp),
+                                modifier = Modifier.size(100.dp),
                                 colorFilter = null
                             )
-                            Text(category.name)
+                            Text(category.name, modifier = Modifier.width(140.dp))
                         }
                     }
                 }
@@ -187,7 +178,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @Preview
+    //@Preview
     @Composable
     fun CategoryPreview(){
         CategoryItem(DataMobile().listCategoryProduct!![0])
@@ -195,19 +186,39 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun CategoryBar(categoryList: List<CategoryProduct>){
-        Card {
-            LazyRow(contentPadding = PaddingValues(5.dp)){
-                items(categoryList) { category ->
-                    CategoryItem(category)
+        AppTheme {
+            Card(modifier = Modifier.padding(10.dp)){
+                Text("Категории", fontSize = AppTypography.titleLarge.fontSize, modifier = Modifier.padding(top = 16.dp, start = 16.dp))
+                LazyRow(contentPadding = PaddingValues(10.dp)) {
+                    items(categoryList) { category ->
+                        CategoryItem(category)
+                    }
                 }
             }
         }
     }
 
-    @Preview
+    //@Preview
     @Composable
     fun CategoryBarPreview(){
         CategoryBar(DataMobile().listCategoryProduct!!)
+    }
+
+    @Preview(showSystemUi = true)
+    @Composable
+    fun MainScreenPreview(){
+        AppTheme {
+            Column {
+                CategoryBar(DataMobile().listCategoryProduct!!)
+                Card(modifier = Modifier.padding(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)){
+                    LazyVerticalGrid(columns = GridCells.Fixed(2)) {
+                        items(DataMobile().listProduct!!) { product ->
+                            MainCardItem(product, CardType.Common, modifier = Modifier.padding(16.dp))
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
