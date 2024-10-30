@@ -2,6 +2,10 @@
 
 package com.mebelshop.mebelshop_mobile
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.ImageDecoder
+import android.media.Image
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -10,10 +14,14 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -30,9 +38,11 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Text
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,11 +51,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.ExperimentalTvMaterial3Api
+import com.google.ar.core.ImageFormat
 import com.mebelshop.mebelshop_mobile.ar.AR2
 import com.mebelshop.mebelshop_mobile.ui.theme.AppTheme
 import com.mebelshop.mebelshop_mobile.ui.theme.AppTypography
@@ -138,9 +153,61 @@ class MainActivity : ComponentActivity() {
             7200,
             "Стол для инвалидов-колясочников",
             0,
-            CardType.Common
+            CardType.LikedDicsount
         )
     }
 
+
+    @Composable
+    fun CategoryItem(category: CategoryProduct){
+        var bitmapState by remember{ mutableStateOf<Bitmap?>(null) }
+        val context = LocalContext.current
+
+        LaunchedEffect(Unit) {
+            bitmapState = BitmapFactory.decodeStream(context.assets.open(category.image))
+        }
+        AppTheme{
+            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)){
+                if (null != bitmapState) {
+                    val bitmap = bitmapState!!.asImageBitmap()
+
+                    Box(modifier = Modifier.padding(16.dp)) {
+                        Column {
+                            Image(
+                                bitmap = bitmap,
+                                "assetsImage",
+                                modifier = Modifier.size(256.dp),
+                                colorFilter = null
+                            )
+                            Text(category.name)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Preview
+    @Composable
+    fun CategoryPreview(){
+        CategoryItem(DataMobile().listCategoryProduct!![0])
+    }
+
+    @Composable
+    fun CategoryBar(categoryList: List<CategoryProduct>){
+        Card {
+            LazyRow(contentPadding = PaddingValues(5.dp)){
+                items(categoryList) { category ->
+                    CategoryItem(category)
+                }
+            }
+        }
+    }
+
+    @Preview
+    @Composable
+    fun CategoryBarPreview(){
+        CategoryBar(DataMobile().listCategoryProduct!!)
+    }
 }
 
