@@ -10,7 +10,8 @@ class DataMobile {
             CategoryProduct("Школьная мебель", "image/chair_1_1.png"),
             CategoryProduct("Мебель для маломобильных граждан", "image/table_1_1.png"),
             CategoryProduct("Столы", "image/table_1_1.png"),
-            CategoryProduct("Стулья", "image/chair_2_1.png")
+            CategoryProduct("Стулья", "image/chair_2_1.png"),
+            CategoryProduct("Туалеты", "image/toilet_1.png")
         )
 
         listShop = listOf(
@@ -34,7 +35,7 @@ class DataMobile {
                     "Цвет:" to "Серый, Светлое дерево",
                     "Материалы:" to "Сталь, Светлое дерево, Полимерное защитное покрытие, Полимерно-порошковая краска"
                 ),
-                model = "model/table_1.glb"
+                model = "models/table_1.glb"
             ),
 
             Product(
@@ -53,7 +54,7 @@ class DataMobile {
                     "Цвет:" to "Серый, Светлое дерево",
                     "Материалы:" to "Сталь, Светлое дерево, Полимерное защитное покрытие, Полимерно-порошковая краска"
                 ),
-                model = "model/chair_1.glb"
+                model = "models/school_chair_1.glb"
             ),
 
             Product(
@@ -72,7 +73,25 @@ class DataMobile {
                     "Цвет:" to "Черный, Коричневый",
                     "Материалы:" to "Платик, Фанера, Ткань, Поролон"
                 ),
-                model = "model/chair_1.glb"
+                model = "models/office_chair_1.glb"
+            ),
+
+            Product(
+                "Чаша Генуя",
+                32199,
+                null,
+                listShop!![0],
+                listOf(listCategoryProduct!![4]),
+                images = listOf("image/toilet_1.png"),
+                description = "Нету человека, кто не ходит в туалет\n" +
+                        "Плохо человеку, у кого туалета нет\n" +
+                        "Чтоб в штаны не наложить, туалет минуя\n" +
+                        "Люди вдруг изобрели себе чашу Генуя",
+                attributes = mapOf(
+                    "Размер:" to "610x513x255",
+                    "Цвет:" to "Белый"
+                ),
+                model = "models/toilet_1.glb"
             )
         )
     }

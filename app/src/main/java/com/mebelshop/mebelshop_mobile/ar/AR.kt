@@ -39,6 +39,7 @@ import com.google.ar.core.Config
 import com.google.ar.core.Frame
 import com.google.ar.core.Plane
 import com.google.ar.core.TrackingFailureReason
+import com.mebelshop.mebelshop_mobile.Product
 import com.mebelshop.mebelshop_mobile.model.CatalogItem
 import io.github.sceneview.ar.ARScene
 import io.github.sceneview.ar.arcore.createAnchorOrNull
@@ -169,32 +170,6 @@ fun AR() {
 //                        selectedModel = modelPath
 //                    }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-fun CatalogItemCard(item: CatalogItem, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(text = item.title)
-        }
-    }
-}
-
-@Composable
-fun CatalogScreen(items: List<CatalogItem>, onItemSelected: (String) -> Unit) {
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
-        items(items) { item ->
-            CatalogItemCard(item = item) {
-                onItemSelected(item.modelPath)
             }
         }
     }

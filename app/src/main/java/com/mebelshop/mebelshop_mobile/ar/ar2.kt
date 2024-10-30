@@ -18,6 +18,7 @@ import android.os.Looper
 import android.provider.MediaStore
 import android.provider.MediaStore.Images
 import android.util.DisplayMetrics
+import android.util.Log
 import android.view.PixelCopy
 import android.view.WindowManager
 import android.widget.Toast
@@ -25,6 +26,7 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,6 +38,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -43,6 +47,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
@@ -87,6 +92,9 @@ import com.google.ar.core.Anchor
 import com.google.ar.core.Config
 import com.google.ar.core.Frame
 import com.google.ar.core.TrackingFailureReason
+import com.mebelshop.mebelshop_mobile.DataMobile
+import com.mebelshop.mebelshop_mobile.MainActivity
+import com.mebelshop.mebelshop_mobile.Product
 import com.mebelshop.mebelshop_mobile.R
 import com.mebelshop.mebelshop_mobile.model.CatalogItem
 import dev.romainguy.kotlin.math.Float3
@@ -112,11 +120,14 @@ import kotlinx.coroutines.launch
 import java.io.OutputStream
 import java.nio.IntBuffer
 
-private const val kModelFile1 = "models/example_model_1.glb"
-private const val kModelFile2 = "models/example_model_2.glb"
-private const val kModelFile3 = "models/example_model_3.glb"
-private const val kModelFile4 = "models/example_model_4.glb"
-private const val kModelFile5 = "models/example_model_5.glb"
+//private const val kModelFile1 = "models/example_model_1.glb"
+//private const val kModelFile2 = "models/example_model_2.glb"
+//private const val kModelFile3 = "models/example_model_3.glb"
+//private const val kModelFile4 = "models/example_model_4.glb"
+//private const val kModelFile5 = "models/example_model_5.glb"
+private const val kModelFile6 = "models/office_chair_1.glb"
+private const val kModelFile7 = "models/school_chair_1.glb"
+private const val kModelFile8 = "models/table_1.glb"
 
 
 private const val kMaxModelInstances = 10
@@ -125,8 +136,7 @@ private const val kMaxModelInstances = 10
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AR2() {
-
+fun AR2(selectedPathToModel: String? = null) {
     val context = LocalContext.current
     val activity = context as? Activity
 
@@ -164,15 +174,16 @@ fun AR2() {
         var showCrosshair by remember { mutableStateOf(false) }
 
         val catalogItems = remember {
-            listOf(
-                CatalogItem(1, "куб", kModelFile1),
-                CatalogItem(2, "тц", kModelFile2),
-                CatalogItem(3, "стеллаж", kModelFile3),
-                CatalogItem(4, "тумба", kModelFile4),
-                CatalogItem(5, "лампа", kModelFile5),
-                )
+            DataMobile().listProduct!!
         }
+
         var selectedModel by remember { mutableStateOf<String?>(null) }
+
+
+        if (selectedPathToModel != null) {
+            selectedModel = selectedPathToModel
+            showCrosshair = true
+        }
 
         var rotationAngle by remember { mutableStateOf(0f) }
         var initialRotation by remember { mutableStateOf(dev.romainguy.kotlin.math.Quaternion()) }
@@ -184,12 +195,8 @@ fun AR2() {
         var y_val by remember { mutableStateOf(0f) }
 
         var screenshot by remember { mutableStateOf<ImageBitmap?>(null) }
-        Scaffold(
-            floatingActionButton = {
 
-            }
-        ) { contentPadding ->
-
+        Scaffold { contentPadding ->
             Box(
                 modifier = Modifier
                     .padding(contentPadding)
@@ -269,6 +276,7 @@ fun AR2() {
                             if (node is ModelNode) {
                                 node.isPositionEditable = false
                             }
+                            Log.d("=POSITION=", "${node!!.worldQuaternion.xyz}")
                         }
                         )
                 )
@@ -462,7 +470,7 @@ fun AR2() {
                         },
                         sheetState = bottomSelectionSheetState
                     ) {
-                        CatalogScreen(catalogItems) { modelPath ->
+                        CatalogScreen(catalogItems!!) { modelPath ->
                             selectedModel = modelPath
                             showCrosshair = true
                         }
@@ -599,4 +607,31 @@ fun captureARScreenshot(renderer: Renderer, engine: Engine, view: View, onScreen
     onScreenshotTaken(screenshotBitmap)
 
     engine.destroySwapChain(swapChain)
+}
+
+
+@Composable
+fun CatalogItemCard(item: Product, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(text = item.name)
+        }
+    }
+}
+
+@Composable
+fun CatalogScreen(items: List<Product>, onItemSelected: (String) -> Unit) {
+    LazyColumn(modifier = Modifier.fillMaxSize()) {
+        items(items) { item ->
+            CatalogItemCard(item = item) {
+                onItemSelected(item.model)
+            }
+        }
+    }
 }

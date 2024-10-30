@@ -2,10 +2,12 @@ package com.mebelshop.mebelshop_mobile
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -50,23 +52,86 @@ import com.mebelshop.mebelshop_mobile.ui.theme.AppTheme
 import com.mebelshop.mebelshop_mobile.ui.theme.AppTypography
 
 class MainActivity : ComponentActivity() {
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        enableEdgeToEdge()
+
         setContent {
              AppTheme {
-                var ar by remember{
-                    mutableStateOf(false)
-                }
-                if(ar){
-                    enableEdgeToEdge()
-                    AR2()
-                }
-                else{
-                    Button(onClick = {ar = true}) {
-                        Text("Toggle AR")
+                 var isARScreenVisible by remember { mutableStateOf(false) }
+                 var selectedModelPath by remember { mutableStateOf<String?>(null) }
+
+                 if(isARScreenVisible && selectedModelPath != null){
+                     AR2(selectedModelPath)
+                 } else if (isARScreenVisible && selectedModelPath == null) {
+                     AR2()
+                 }
+                 else{
+                     Box(
+                         modifier = Modifier
+                         .padding(top = 30.dp)
+                     ) {
+                         Column {
+                             CategoryBar(DataMobile().listCategoryProduct!!)
+
+                             Card(
+                                 modifier = Modifier.padding(16.dp),
+                                 colors = CardDefaults.cardColors(
+                                     containerColor = MaterialTheme.colorScheme.surfaceContainer
+                                 )
+                             ) {
+                                 LazyVerticalGrid(columns = GridCells.Fixed(2)) {
+                                     items(DataMobile().listProduct!!) { product ->
+                                         MainCardItem(
+                                             product,
+                                             CardType.Common,
+                                             modifier = Modifier.padding(16.dp),
+                                             onClick = {
+                                             selectedModelPath = product.model
+                                             isARScreenVisible = true
+                                         })
+                                     }
+                                 }
+                             }
+                         }
+
+                         Button(
+                             onClick = { isARScreenVisible = true }
+                         ) {
+                             Text("Toggle AR")
+                         }
+                     }
+                 }
+            }
+        }
+    }
+
+    @Composable
+    fun MainScreen(onToggleAR: (String?) -> Unit) {
+        Column {
+            Column {
+                CategoryBar(DataMobile().listCategoryProduct!!)
+
+                Card(
+                    modifier = Modifier.padding(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+                ) {
+                    LazyVerticalGrid(columns = GridCells.Fixed(2)) {
+                        items(DataMobile().listProduct!!) { product ->
+                            MainCardItem(product, CardType.Common, modifier = Modifier.padding(16.dp), onClick = {
+                                onToggleAR(product.model)
+                            })
+                        }
                     }
                 }
+            }
+
+            Button(
+                onClick = { onToggleAR(null) }
+            ) {
+                Text("Toggle AR")
             }
         }
     }
@@ -95,14 +160,14 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun MainCardItem(product: Product, type: CardType, modifier: Modifier){
+    fun MainCardItem(product: Product, type: CardType, modifier: Modifier, onClick: () -> Unit = {}){
         AppTheme {
             val colors = when(type){
                 CardType.Common -> CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
                 CardType.Liked -> CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.error)
                 CardType.LikedDiscount, CardType.Discount-> CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiary)
             }
-            Card(shape = RoundedCornerShape(16), colors = colors, modifier = modifier){
+            Card(shape = RoundedCornerShape(16), colors = colors, modifier = modifier, onClick = onClick){
                 Box(modifier = Modifier.padding(16.dp)){
                     Column {
                         Box{
@@ -159,7 +224,11 @@ class MainActivity : ComponentActivity() {
     fun CategoryItem(category: CategoryProduct){
         val bitmapState = getImageFromAssets(category.image)
         AppTheme{
-            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)){
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                )
+            ){
                 Box(modifier = Modifier.padding(4.dp)) {
                     Column {
                         if (null != bitmapState) {
