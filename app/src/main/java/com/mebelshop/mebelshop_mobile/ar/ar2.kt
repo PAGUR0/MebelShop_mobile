@@ -1,44 +1,57 @@
 package com.mebelshop.mebelshop_mobile.ar
 
+import Arrow_left
+import Arrow_right
+import Plane_off
+import Plane_on
+import SearchIcon
+import Trashcan
+import android.app.Activity
 import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.icu.util.TimeZone.SystemTimeZoneType
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
+import android.provider.MediaStore.Images
 import android.util.DisplayMetrics
-import android.util.Log
-import android.view.Display.Mode
-import android.view.MotionEvent
 import android.view.PixelCopy
-import android.view.SurfaceView
 import android.view.WindowManager
 import android.widget.Toast
+import androidx.annotation.RequiresApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.SliderState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -49,54 +62,55 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.applyCanvas
 import com.google.android.filament.Engine
+import com.google.android.filament.RenderTarget
+import com.google.android.filament.Renderer
+import com.google.android.filament.SwapChain
+import com.google.android.filament.SwapChainFlags
 import com.google.android.filament.Texture
+import com.google.android.filament.View
 import com.google.ar.core.Anchor
 import com.google.ar.core.Config
 import com.google.ar.core.Frame
 import com.google.ar.core.TrackingFailureReason
+import com.mebelshop.mebelshop_mobile.R
 import com.mebelshop.mebelshop_mobile.model.CatalogItem
-import dev.romainguy.kotlin.math.Float2
 import dev.romainguy.kotlin.math.Float3
-import dev.romainguy.kotlin.math.quaternion
 import io.github.sceneview.ar.ARScene
 import io.github.sceneview.ar.arcore.createAnchorOrNull
 import io.github.sceneview.ar.arcore.isValid
-import io.github.sceneview.ar.isFocusable
 import io.github.sceneview.ar.node.AnchorNode
 import io.github.sceneview.ar.rememberARCameraNode
-import io.github.sceneview.collision.HitResult
-import io.github.sceneview.collision.Quaternion
-import io.github.sceneview.collision.Vector3
-import io.github.sceneview.gesture.MoveGestureDetector
-import io.github.sceneview.gesture.RotateGestureDetector
-import io.github.sceneview.gesture.ScaleGestureDetector
 import io.github.sceneview.loaders.MaterialLoader
 import io.github.sceneview.loaders.ModelLoader
-import io.github.sceneview.math.Position
-import io.github.sceneview.model.Model
 import io.github.sceneview.model.ModelInstance
 import io.github.sceneview.node.CubeNode
 import io.github.sceneview.node.ModelNode
-import io.github.sceneview.node.Node
-import io.github.sceneview.rememberCameraNode
 import io.github.sceneview.rememberCollisionSystem
 import io.github.sceneview.rememberEngine
 import io.github.sceneview.rememberMaterialLoader
 import io.github.sceneview.rememberModelLoader
 import io.github.sceneview.rememberNodes
 import io.github.sceneview.rememberOnGestureListener
+import io.github.sceneview.rememberRenderer
 import io.github.sceneview.rememberView
-import io.github.sceneview.utils.worldToScreen
 import kotlinx.coroutines.launch
 import java.io.OutputStream
-import java.nio.ByteBuffer
+import java.nio.IntBuffer
 
 private const val kModelFile1 = "models/example_model_1.glb"
 private const val kModelFile2 = "models/example_model_2.glb"
@@ -108,14 +122,20 @@ private const val kModelFile5 = "models/example_model_5.glb"
 private const val kMaxModelInstances = 10
 
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AR2() {
     val context = LocalContext.current
+    val activity = context as? Activity
+
     val (screenWidth, screenHeight) = getScreenSize(context)
 
     val centerX = screenWidth / 2f
     val centerY = screenHeight / 2f
+
+    val coroutineScope = rememberCoroutineScope()
+    val graphicsLayer = rememberGraphicsLayer()
 
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -126,6 +146,7 @@ fun AR2() {
         val cameraNode = rememberARCameraNode(engine)
         val childNodes = rememberNodes()
         val view = rememberView(engine)
+        val renderer = rememberRenderer(engine)
         val collisionSystem = rememberCollisionSystem(view)
 
         var planeRenderer by remember { mutableStateOf(true) }
@@ -139,7 +160,6 @@ fun AR2() {
         val bottomSelectionSheetState = rememberModalBottomSheetState()
         val scope = rememberCoroutineScope()
         var showBottomSheet by remember { mutableStateOf(false) }
-
         var showCrosshair by remember { mutableStateOf(false) }
 
         val catalogItems = remember {
@@ -161,22 +181,11 @@ fun AR2() {
         var showMenuModel by remember { mutableStateOf(false) }
         var modelPosition by remember { mutableStateOf(Float3(0f, 0f, 0f)) }
         var y_val by remember { mutableStateOf(0f) }
+
+        var screenshot by remember { mutableStateOf<ImageBitmap?>(null) }
         Scaffold(
             floatingActionButton = {
-                ExtendedFloatingActionButton(
-                    onClick = {
-                        showBottomSheet = true
-                        scope.launch { bottomSelectionSheetState.show() }
-                    },
-                    containerColor = Color(0xFF4CAF50),
-                    shape = RoundedCornerShape(300.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Добавить",
-                        tint = Color.White
-                    )
-                }
+
             }
         ) { contentPadding ->
 
@@ -188,10 +197,12 @@ fun AR2() {
                 var initialPosition by remember { mutableStateOf(Float3(0f, 0f, 0f)) }
 
                 ARScene(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize(),
                     childNodes = childNodes,
                     engine = engine,
                     view = view,
+                    renderer = renderer,
                     modelLoader = modelLoader,
                     collisionSystem = collisionSystem,
                     sessionConfiguration = { session, config ->
@@ -209,7 +220,7 @@ fun AR2() {
                     onTrackingFailureChanged = {
                         trackingFailureReason = it
                     },
-                    onSessionUpdated = { session, updatedFrame ->
+                    onSessionUpdated = { _, updatedFrame ->
                         frame = updatedFrame
                     },
                     onGestureListener = rememberOnGestureListener(
@@ -260,6 +271,29 @@ fun AR2() {
                         }
                         )
                 )
+
+                Button(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .wrapContentSize(),
+                    onClick = {
+                        showBottomSheet = true
+                        scope.launch { bottomSelectionSheetState.show() }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        colorResource(R.color.green),
+                        colorResource(R.color.white)
+                    ),
+                    contentPadding = PaddingValues(0.dp),
+                    shape = CircleShape
+                ) {
+                    Icon(
+                        SearchIcon,
+                        contentDescription = "Поиск",
+                        tint = Color.White
+                    )
+                }
+
                 if (showCrosshair) {
                     Box(
                         modifier = Modifier
@@ -271,104 +305,150 @@ fun AR2() {
 
                 Button(
                     modifier = Modifier
+                        .size(50.dp)
                         .align(Alignment.TopEnd),
                     onClick = {
                         planeRenderer = !planeRenderer
                     },
-                    shape = RoundedCornerShape(percent = 40)
+                    colors = ButtonDefaults.buttonColors(
+                        contentColor = colorResource(R.color.green),
+                        containerColor = Color.White
+                    ),
+                    shape = CircleShape,
+                    contentPadding = PaddingValues(0.dp)
                 ) {
-                    Text(text = if (planeRenderer) "Сетка выкл" else "Сетка вкл")
+                    Icon(
+                        if (planeRenderer) Plane_off else Plane_on,
+                        contentDescription = "plane render ON or OFF"
+                        )
                 }
 
-                Button(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart),
-                    onClick = {
-
-                    },
-                    shape = RoundedCornerShape(percent = 40)
-                ) {
-                    Text(text = "Фото")
-                }
+//                Button(
+//                    modifier = Modifier
+//                        .align(Alignment.BottomStart),
+//                    onClick = {
+//                        planeRenderer = false
+//
+//                        captureARScreenshot(renderer, engine, view, onScreenshotTaken = {
+//                            saveImageBitmapToGallery(context, it)
+//                        })
+//
+//                        planeRenderer = true
+//                    },
+//                    shape = RoundedCornerShape(percent = 40)
+//                ) {
+//                    Text(text = "Фото")
+//                }
 
                 if (showMenuModel) {
                     selectedNode!!.isRotationEditable = true
-                    Box(
+                    Column (
                         modifier = Modifier
-                            .fillMaxWidth()
                             .align(Alignment.BottomEnd)
-                            .padding(16.dp)
-                            .background(Color.Gray.copy(alpha = 0.8f),
-                                shape = RoundedCornerShape(8.dp))
                     ) {
-                        Column {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceEvenly
-                            ) {
-                                Button(
-                                    onClick = {
-                                        selectedNode?.let {
-                                            val currentQuaternion = it.quaternion
-                                            val rotationQuaternion =
-                                                dev.romainguy.kotlin.math.Quaternion
-                                                    .fromAxisAngle(
-                                                        Float3(0f, 1f, 0f), -90f
-                                                    )
-                                            it.quaternion = currentQuaternion * rotationQuaternion
-                                        }
-                                    },
-
-                                    shape = RoundedCornerShape(percent = 18)
+                        Box(
+                            modifier = Modifier
+                                .padding(60.dp, 10.dp)
+                                .background(
+                                    color = colorResource(R.color.green),
+                                    shape = RoundedCornerShape(16)
+                                )
+                                .wrapContentHeight()
+                        ) {
+                            Column {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceEvenly
                                 ) {
-                                    Text("Поворот\nвлево", textAlign = TextAlign.Center)
-                                }
-                                Button(
-                                    onClick = {
-                                        selectedNode?.let {
-                                            val currentQuaternion = it.quaternion
-                                            val rotationQuaternion =
-                                                dev.romainguy.kotlin.math.Quaternion
-                                                    .fromAxisAngle(
-                                                        Float3(0f, 1f, 0f), 90f
-                                                    )
-                                            it.quaternion = currentQuaternion * rotationQuaternion
-                                        }
-                                    },
-
-                                    shape = RoundedCornerShape(percent = 18)
-                                ) {
-                                    Text("Поворот\nвправо", textAlign = TextAlign.Center)
-                                }
-                                Button(
-                                    onClick = {
-                                        selectedNode?.let { it.destroy() }
-                                        showMenuModel = false
-                                    },
-
-                                    shape = RoundedCornerShape(percent = 18)
-                                ) {
-                                    Text("Удалить", textAlign = TextAlign.Center)
-                                }
-                            }
-                            Slider(
-                                value = y_val,
-                                valueRange = -180f..180f,
-                                steps = 360,
-                                onValueChange = {value ->
-                                    y_val = value
-                                    selectedNode?.let { node ->
-                                        val rotationQuaternion =
-                                            dev.romainguy.kotlin.math.Quaternion
-                                                .fromAxisAngle(
-                                                    Float3(0f, 1f, 0f), y_val
-                                                )
-                                        node.quaternion = rotationQuaternion
+                                    IconButton(
+                                        modifier = Modifier
+                                            .size(100.dp),
+                                        onClick = {
+                                            selectedNode?.let {
+                                                val currentQuaternion = it.quaternion
+                                                val rotationQuaternion =
+                                                    dev.romainguy.kotlin.math.Quaternion
+                                                        .fromAxisAngle(
+                                                            Float3(0f, 1f, 0f), -90f
+                                                        )
+                                                it.quaternion = currentQuaternion * rotationQuaternion
+                                            }
+                                        },
+                                    ) {
+                                        Icon(
+                                            Arrow_left,
+                                            modifier = Modifier.size(37.dp),
+                                            contentDescription = "turn left model",
+                                            tint = Color.White
+                                        )
+                                    }
+                                    IconButton(
+                                        modifier = Modifier
+                                            .size(100.dp),
+                                        onClick = {
+                                            selectedNode?.let {
+                                                val currentQuaternion = it.quaternion
+                                                val rotationQuaternion =
+                                                    dev.romainguy.kotlin.math.Quaternion
+                                                        .fromAxisAngle(
+                                                            Float3(0f, 1f, 0f), 90f
+                                                        )
+                                                it.quaternion = currentQuaternion * rotationQuaternion
+                                            }
+                                        },
+                                    ) {
+                                        Icon(
+                                            Arrow_right,
+                                            modifier = Modifier.size(37.dp),
+                                            contentDescription = "turn right model",
+                                            tint = Color.White
+                                        )
+                                    }
+                                    IconButton(
+                                        modifier = Modifier
+                                            .size(100.dp),
+                                        onClick = {
+                                            selectedNode?.destroy()
+                                            showMenuModel = false
+                                        },
+                                    ) {
+                                        Icon(
+                                            Trashcan,
+                                            modifier = Modifier.size(37.dp),
+                                            contentDescription = "delete model",
+                                            tint = Color.White
+                                        )
                                     }
                                 }
-                            )
+                            }
                         }
+                        Slider(
+                            modifier = Modifier
+                                .padding(vertical = 92.dp),
+                            value = y_val,
+                            valueRange = -180f..180f,
+                            steps = 360,
+                            onValueChange = {value ->
+                                y_val = value
+                                selectedNode?.let { node ->
+                                    val rotationQuaternion =
+                                        dev.romainguy.kotlin.math.Quaternion
+                                            .fromAxisAngle(
+                                                Float3(0f, 1f, 0f), y_val
+                                            )
+                                    node.quaternion = rotationQuaternion
+                                }
+                            },
+                            thumb = {
+                                Box(
+                                    modifier = Modifier
+                                        .size(30.dp)
+                                        .background(colorResource(R.color.green), shape = CircleShape)
+                                )
+                            },
+                            colors = SliderDefaults.colors(thumbColor = colorResource(R.color.green),)
+                        )
                     }
                 } else {
                     selectedNode?.isRotationEditable = false
@@ -391,6 +471,7 @@ fun AR2() {
         }
     }
 }
+
 
 fun createAnchorNode(
     engine: Engine,
@@ -437,4 +518,84 @@ fun getScreenSize(context: Context): Pair<Int, Int> {
     val displayMetrics = DisplayMetrics()
     windowManager.defaultDisplay.getMetrics(displayMetrics)
     return displayMetrics.widthPixels to displayMetrics.heightPixels
+}
+
+fun saveImageBitmapToGallery(
+    context: Context,
+    bitmap: Bitmap,
+    fileName: String = "Screenshot_${System.currentTimeMillis()}"
+) {
+    val contentResolver = context.contentResolver
+    val imageUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+    } else {
+        MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+    }
+
+    val contentValues = ContentValues().apply {
+        put(MediaStore.Images.Media.DISPLAY_NAME, "$fileName.jpg")
+        put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+        put(MediaStore.Images.Media.WIDTH, bitmap.width)
+        put(MediaStore.Images.Media.HEIGHT, bitmap.height)
+    }
+
+    try {
+        val uri = contentResolver.insert(imageUri, contentValues)
+        uri?.let {
+            val outputStream: OutputStream? = contentResolver.openOutputStream(it)
+            outputStream?.use { stream ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream)
+                stream.flush()
+                Toast.makeText(context, "Сохранено в галерею", Toast.LENGTH_SHORT).show()
+            }
+        } ?: throw Exception("Не удалось создать URI для изображения")
+    } catch (e: Exception) {
+        Toast.makeText(context, "Ошибка при сохранении: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+fun captureScreenshotFromSurfaceView(activity: Activity?, view: View, onBitmapReady: (Bitmap) -> Unit) {
+    val bitmap = Bitmap.createBitmap(view.viewport.width, view.viewport.height, Bitmap.Config.ARGB_8888)
+
+    PixelCopy.request(activity!!.window, bitmap, { result ->
+        if (result == PixelCopy.SUCCESS) {
+            onBitmapReady(bitmap)
+        } else {
+            Toast.makeText(activity, "Не удалось сделать скриншот", Toast.LENGTH_SHORT).show()
+        }
+    }, Handler(Looper.getMainLooper()))
+}
+
+fun captureARScreenshot(renderer: Renderer, engine: Engine, view: View, onScreenshotTaken: (Bitmap) -> Unit) {
+    val width = view.viewport.width
+    val height = view.viewport.height
+
+    val swapChain = engine.createSwapChain(
+        width,
+        height,
+        SwapChainFlags.CONFIG_READABLE
+    )
+
+    val buffer = IntArray (width * height)
+
+    val bufferDescriptor = Texture.PixelBufferDescriptor(
+        IntBuffer.wrap(buffer),
+        Texture.Format.RGBA,
+        Texture.Type.UBYTE
+    )
+
+
+    if (renderer.beginFrame(swapChain, System.nanoTime())) {
+        renderer.render(view)
+        renderer.readPixels(0, 0, width, height, bufferDescriptor)
+        renderer.endFrame()
+    }
+
+    val screenshotBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+    screenshotBitmap.setPixels(buffer, 0, width, 0, 0, width, height)
+
+    onScreenshotTaken(screenshotBitmap)
+
+    engine.destroySwapChain(swapChain)
 }
