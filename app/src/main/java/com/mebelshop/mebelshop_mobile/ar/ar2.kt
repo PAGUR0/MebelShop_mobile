@@ -111,6 +111,7 @@ private const val kMaxModelInstances = 10
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AR2() {
+
     val context = LocalContext.current
     val (screenWidth, screenHeight) = getScreenSize(context)
 
