@@ -2,6 +2,7 @@ package com.mebelshop.mebelshop_mobile.ar
 
 import Arrow_left
 import Arrow_right
+import Duplicate
 import Plane_off
 import Plane_on
 import SearchIcon
@@ -21,6 +22,7 @@ import android.util.DisplayMetrics
 import android.util.Log
 import android.view.PixelCopy
 import android.view.WindowManager
+import android.widget.Button
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
@@ -44,6 +46,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.materialIcon
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
@@ -82,12 +85,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.applyCanvas
 import com.google.android.filament.Engine
+import com.google.android.filament.Filament
 import com.google.android.filament.RenderTarget
 import com.google.android.filament.Renderer
 import com.google.android.filament.SwapChain
 import com.google.android.filament.SwapChainFlags
 import com.google.android.filament.Texture
 import com.google.android.filament.View
+import com.google.android.filament.gltfio.FilamentAsset
 import com.google.ar.core.Anchor
 import com.google.ar.core.Config
 import com.google.ar.core.Frame
@@ -105,6 +110,7 @@ import io.github.sceneview.ar.node.AnchorNode
 import io.github.sceneview.ar.rememberARCameraNode
 import io.github.sceneview.loaders.MaterialLoader
 import io.github.sceneview.loaders.ModelLoader
+import io.github.sceneview.model.Model
 import io.github.sceneview.model.ModelInstance
 import io.github.sceneview.node.CubeNode
 import io.github.sceneview.node.ModelNode
@@ -117,7 +123,9 @@ import io.github.sceneview.rememberOnGestureListener
 import io.github.sceneview.rememberRenderer
 import io.github.sceneview.rememberView
 import kotlinx.coroutines.launch
+import java.io.BufferedWriter
 import java.io.OutputStream
+import java.nio.Buffer
 import java.nio.IntBuffer
 
 //private const val kModelFile1 = "models/example_model_1.glb"
@@ -194,7 +202,7 @@ fun AR2(selectedPathToModel: String? = null) {
         var modelPosition by remember { mutableStateOf(Float3(0f, 0f, 0f)) }
         var y_val by remember { mutableStateOf(0f) }
 
-        var screenshot by remember { mutableStateOf<ImageBitmap?>(null) }
+        var duplicateNode by remember { mutableStateOf(false) }
 
         Scaffold { contentPadding ->
             Box(
@@ -261,6 +269,32 @@ fun AR2(selectedPathToModel: String? = null) {
                                             )
                                         }
                                 }
+
+                                if (duplicateNode) {
+                                    if (modelInstances.isNotEmpty()) {
+                                        modelInstances.clear()
+                                    }
+
+                                    val hitResults = frame?.hitTest(centerX, centerY)
+                                    hitResults?.firstOrNull {
+                                        it.isValid(
+                                            depthPoint = false,
+                                            point = false
+                                        )
+                                    }?.createAnchorOrNull()
+                                        ?.let { anchor ->
+                                            childNodes += createAnchorNode(
+                                                engine = engine,
+                                                modelLoader = modelLoader,
+                                                materialLoader = materialLoader,
+                                                modelInstances = modelInstances,
+                                                anchor = anchor,
+                                                model = selectedNode!!.model
+                                            )
+                                        }
+                                    duplicateNode = false
+                                }
+
                                 selectedModel = null
                                 showCrosshair = false
                             }
@@ -311,25 +345,49 @@ fun AR2(selectedPathToModel: String? = null) {
                             .align(Alignment.Center)
                     )
                 }
-
-                Button(
+                Column(
                     modifier = Modifier
-                        .size(50.dp)
-                        .align(Alignment.TopEnd),
-                    onClick = {
-                        planeRenderer = !planeRenderer
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        contentColor = colorResource(R.color.green),
-                        containerColor = Color.White
-                    ),
-                    shape = CircleShape,
-                    contentPadding = PaddingValues(0.dp)
-                ) {
-                    Icon(
-                        if (planeRenderer) Plane_off else Plane_on,
-                        contentDescription = "plane render ON or OFF"
+                        .align(Alignment.TopEnd)
+                )
+                {
+                    Button(
+                        modifier = Modifier
+                            .size(50.dp) ,
+                        onClick = {
+                            planeRenderer = !planeRenderer
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            contentColor = colorResource(R.color.green),
+                            containerColor = Color.White
+                        ),
+                        shape = CircleShape,
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Icon(
+                            if (planeRenderer) Plane_off else Plane_on,
+                            contentDescription = "plane render ON or OFF"
                         )
+                    }
+
+                    Button(
+                        modifier = Modifier
+                        .size(50.dp) ,
+                        onClick = {
+                            childNodes.clear()
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            contentColor = colorResource(R.color.green),
+                            containerColor = Color.White
+                        ),
+                        shape = CircleShape,
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Icon(
+                            Trashcan,
+                            contentDescription = "Удаление всех элементов",
+                            tint = colorResource(R.color.green)
+                        )
+                    }
                 }
 
 //                Button(
@@ -418,6 +476,21 @@ fun AR2(selectedPathToModel: String? = null) {
                                         modifier = Modifier
                                             .size(100.dp),
                                         onClick = {
+                                            duplicateNode = true
+                                            showCrosshair = true
+                                        },
+                                    ) {
+                                        Icon(
+                                            Duplicate,
+                                            modifier = Modifier.size(37.dp),
+                                            contentDescription = "turn right model",
+                                            tint = Color.White
+                                        )
+                                    }
+                                    IconButton(
+                                        modifier = Modifier
+                                            .size(100.dp),
+                                        onClick = {
                                             selectedNode?.destroy()
                                             showMenuModel = false
                                         },
@@ -453,7 +526,10 @@ fun AR2(selectedPathToModel: String? = null) {
                                 Box(
                                     modifier = Modifier
                                         .size(30.dp)
-                                        .background(colorResource(R.color.green), shape = CircleShape)
+                                        .background(
+                                            colorResource(R.color.green),
+                                            shape = CircleShape
+                                        )
                                 )
                             },
                             colors = SliderDefaults.colors(thumbColor = colorResource(R.color.green),)
@@ -481,7 +557,6 @@ fun AR2(selectedPathToModel: String? = null) {
     }
 }
 
-
 fun createAnchorNode(
     engine: Engine,
     modelLoader: ModelLoader,
@@ -495,6 +570,46 @@ fun createAnchorNode(
         modelInstance = modelInstances.apply {
             if (isEmpty()) {
                 this += modelLoader.createInstancedModel(modelPath, kMaxModelInstances)
+            }
+        }.removeLast()
+    ).apply {
+        isEditable = true
+        isScaleEditable = false
+        isPositionEditable = false
+        isRotationEditable = false
+    }
+    val boundingBoxNode = CubeNode(
+        engine,
+        size = modelNode.extents,
+        center = modelNode.center,
+        materialInstance = materialLoader.createColorInstance(Color.White.copy(alpha = 0.5f))
+    ).apply {
+        isVisible = false
+    }
+    modelNode.addChildNode(boundingBoxNode)
+    anchorNode.addChildNode(modelNode)
+
+    listOf(modelNode, anchorNode).forEach {
+        it.onEditingChanged = { editingTransforms ->
+            boundingBoxNode.isVisible = editingTransforms.isNotEmpty()
+        }
+    }
+    return anchorNode
+}
+
+fun createAnchorNode(
+    engine: Engine,
+    modelLoader: ModelLoader,
+    materialLoader: MaterialLoader,
+    modelInstances: MutableList<ModelInstance>,
+    anchor: Anchor,
+    model: FilamentAsset
+): AnchorNode {
+    val anchorNode = AnchorNode(engine = engine, anchor = anchor)
+    val modelNode = ModelNode(
+        modelInstance = modelInstances.apply {
+            if (isEmpty()) {
+                this += modelLoader.createInstance(model) as ModelInstance
             }
         }.removeLast()
     ).apply {
