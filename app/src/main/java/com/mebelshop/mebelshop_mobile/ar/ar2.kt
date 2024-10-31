@@ -7,27 +7,31 @@ import Plane_off
 import Plane_on
 import SearchIcon
 import Trashcan
+import android.R.attr.height
+import android.R.attr.width
 import android.app.Activity
 import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.icu.util.TimeZone.SystemTimeZoneType
+import android.graphics.BitmapFactory
+import android.graphics.ImageFormat
+import android.graphics.YuvImage
+import android.media.Image
+import android.media.ImageReader
 import android.os.Build
 import android.os.Handler
+import android.os.HandlerThread
 import android.os.Looper
 import android.provider.MediaStore
-import android.provider.MediaStore.Images
 import android.util.DisplayMetrics
 import android.util.Log
 import android.view.PixelCopy
+import android.view.Surface
+import android.view.SurfaceView
 import android.view.WindowManager
-import android.widget.Button
 import android.widget.Toast
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -44,22 +48,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.materialIcon
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
-import androidx.compose.material3.SliderState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -70,47 +68,34 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asAndroidBitmap
-import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.core.graphics.applyCanvas
 import com.google.android.filament.Engine
-import com.google.android.filament.Filament
-import com.google.android.filament.RenderTarget
-import com.google.android.filament.Renderer
-import com.google.android.filament.SwapChain
-import com.google.android.filament.SwapChainFlags
-import com.google.android.filament.Texture
 import com.google.android.filament.View
 import com.google.android.filament.gltfio.FilamentAsset
 import com.google.ar.core.Anchor
 import com.google.ar.core.Config
 import com.google.ar.core.Frame
+import com.google.ar.core.Session
+import com.google.ar.core.SharedCamera
 import com.google.ar.core.TrackingFailureReason
 import com.mebelshop.mebelshop_mobile.DataMobile
-import com.mebelshop.mebelshop_mobile.MainActivity
 import com.mebelshop.mebelshop_mobile.Product
 import com.mebelshop.mebelshop_mobile.R
-import com.mebelshop.mebelshop_mobile.model.CatalogItem
 import dev.romainguy.kotlin.math.Float3
 import io.github.sceneview.ar.ARScene
+import io.github.sceneview.ar.ARSceneView
+import io.github.sceneview.ar.arcore.ARSession
 import io.github.sceneview.ar.arcore.createAnchorOrNull
 import io.github.sceneview.ar.arcore.isValid
 import io.github.sceneview.ar.node.AnchorNode
 import io.github.sceneview.ar.rememberARCameraNode
+import io.github.sceneview.ar.rememberARCameraStream
 import io.github.sceneview.loaders.MaterialLoader
 import io.github.sceneview.loaders.ModelLoader
-import io.github.sceneview.model.Model
 import io.github.sceneview.model.ModelInstance
 import io.github.sceneview.node.CubeNode
 import io.github.sceneview.node.ModelNode
@@ -121,12 +106,14 @@ import io.github.sceneview.rememberModelLoader
 import io.github.sceneview.rememberNodes
 import io.github.sceneview.rememberOnGestureListener
 import io.github.sceneview.rememberRenderer
+import io.github.sceneview.rememberScene
 import io.github.sceneview.rememberView
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.io.BufferedWriter
+import java.io.ByteArrayOutputStream
 import java.io.OutputStream
-import java.nio.Buffer
-import java.nio.IntBuffer
+
 
 //private const val kModelFile1 = "models/example_model_1.glb"
 //private const val kModelFile2 = "models/example_model_2.glb"
@@ -166,9 +153,12 @@ fun AR2(selectedPathToModel: String? = null) {
         val childNodes = rememberNodes()
         val view = rememberView(engine)
         val renderer = rememberRenderer(engine)
+        val scene = rememberScene(engine)
         val collisionSystem = rememberCollisionSystem(view)
 
         var planeRenderer by remember { mutableStateOf(true) }
+
+        val cameraStream = rememberARCameraStream(materialLoader)
 
         val modelInstances = remember { mutableListOf<ModelInstance>() }
         var trackingFailureReason by remember {
@@ -204,6 +194,12 @@ fun AR2(selectedPathToModel: String? = null) {
 
         var duplicateNode by remember { mutableStateOf(false) }
 
+        var sharedSession: Session? = null
+        var sharedCamera: SharedCamera? = null
+
+        val captureHelper = CaptureHelper()
+        var arSceneView: ARSceneView? = null
+
         Scaffold { contentPadding ->
             Box(
                 modifier = Modifier
@@ -219,8 +215,12 @@ fun AR2(selectedPathToModel: String? = null) {
                     engine = engine,
                     view = view,
                     renderer = renderer,
+                    scene = scene,
                     modelLoader = modelLoader,
                     collisionSystem = collisionSystem,
+                    sessionFeatures = setOf(
+                        Session.Feature.SHARED_CAMERA
+                    ),
                     sessionConfiguration = { session, config ->
                         config.depthMode =
                             when (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
@@ -233,10 +233,14 @@ fun AR2(selectedPathToModel: String? = null) {
                     },
                     cameraNode = cameraNode,
                     planeRenderer = planeRenderer,
+                    cameraStream = cameraStream,
+                    onSessionCreated = {
+
+                    },
                     onTrackingFailureChanged = {
                         trackingFailureReason = it
                     },
-                    onSessionUpdated = { _, updatedFrame ->
+                    onSessionUpdated = { session, updatedFrame ->
                         frame = updatedFrame
                     },
                     onGestureListener = rememberOnGestureListener(
@@ -313,7 +317,9 @@ fun AR2(selectedPathToModel: String? = null) {
                             Log.d("=POSITION=", "${node!!.worldQuaternion.xyz}")
                         }
                         )
-                )
+                ) {
+                    arSceneView = this
+                }
 
                 Button(
                     modifier = Modifier
@@ -390,22 +396,20 @@ fun AR2(selectedPathToModel: String? = null) {
                     }
                 }
 
-//                Button(
-//                    modifier = Modifier
-//                        .align(Alignment.BottomStart),
-//                    onClick = {
-//                        planeRenderer = false
-//
-//                        captureARScreenshot(renderer, engine, view, onScreenshotTaken = {
-//                            saveImageBitmapToGallery(context, it)
-//                        })
-//
-//                        planeRenderer = true
-//                    },
-//                    shape = RoundedCornerShape(percent = 40)
-//                ) {
-//                    Text(text = "Фото")
-//                }
+                Button(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart),
+                    onClick = {
+                        planeRenderer = false
+
+                        captureHelper.takePhoto(arSceneView!!, context)
+
+                        planeRenderer = true
+                    },
+                    shape = RoundedCornerShape(percent = 40)
+                ) {
+                    Text(text = "Фото")
+                }
 
                 if (showMenuModel) {
                     selectedNode!!.isRotationEditable = true
@@ -532,7 +536,7 @@ fun AR2(selectedPathToModel: String? = null) {
                                         )
                                 )
                             },
-                            colors = SliderDefaults.colors(thumbColor = colorResource(R.color.green),)
+                            colors = SliderDefaults.colors(thumbColor = colorResource(R.color.green))
                         )
                     }
                 } else {
@@ -691,37 +695,70 @@ fun captureScreenshotFromSurfaceView(activity: Activity?, view: View, onBitmapRe
     }, Handler(Looper.getMainLooper()))
 }
 
-fun captureARScreenshot(renderer: Renderer, engine: Engine, view: View, onScreenshotTaken: (Bitmap) -> Unit) {
-    val width = view.viewport.width
-    val height = view.viewport.height
+fun captureARScreenshot(session: Session, sharedCamera: SharedCamera, onScreenshotTaken: (Bitmap) -> Unit) {
+//    val image = frame.acquireCameraImage()
 
-    val swapChain = engine.createSwapChain(
-        width,
-        height,
-        SwapChainFlags.CONFIG_READABLE
-    )
+//    if (image.format == ImageFormat.YUV_420_888) {
+//        val yPlane: Image.Plane = image.planes[0]
+//        val uPlane: Image.Plane = image.planes[1]
+//        val vPlane: Image.Plane = image.planes[2]
+//
+//        val yBuffer: ByteBuffer = yPlane.buffer
+//        val uBuffer: ByteBuffer = uPlane.buffer
+//        val vBuffer: ByteBuffer = vPlane.buffer
+//
+//        val ySize = yBuffer.remaining()
+//        val uSize = uBuffer.remaining()
+//        val vSize = vBuffer.remaining()
+//
+//        val nv21ByteArray = ByteArray(ySize + uSize + vSize)
+//
+//        yBuffer.get(nv21ByteArray, 0, ySize)
+//        uBuffer.get(nv21ByteArray, ySize, uSize)
+//        vBuffer.get(nv21ByteArray, ySize + uSize, vSize)
+//
+//        val yuvImage = YuvImage(nv21ByteArray, ImageFormat.NV21, image.width, image.height, null)
+//        val outputStream = ByteArrayOutputStream()
+//        yuvImage.compressToJpeg(Rect(0, 0, image.width, image.height), 100, outputStream)
+//
+//        val bitmap: Bitmap = BitmapFactory.decodeByteArray(outputStream.toByteArray(), 0, outputStream.size())
+//
+//        onScreenshotTaken(bitmap)
+//    }
 
-    val buffer = IntArray (width * height)
+    val backgroundThread = HandlerThread("ImageReaderThread").apply { start() }
+    val appHandler = Handler(backgroundThread.looper)
 
-    val bufferDescriptor = Texture.PixelBufferDescriptor(
-        IntBuffer.wrap(buffer),
-        Texture.Format.RGBA,
-        Texture.Type.UBYTE
-    )
+    val surfaceList: MutableList<Surface>? = sharedCamera.getArCoreSurfaces()
+
+    val imageReader = ImageReader.newInstance(width, height, ImageFormat.YUV_420_888, 2)
+    surfaceList!!.add(imageReader.surface)
+
+    imageReader.setOnImageAvailableListener({ reader ->
+        val image = reader.acquireLatestImage()
+        image?.let {
+            onScreenshotTaken(processImage(it))
+            it.close()
+        }
+    }, appHandler)
+
+    backgroundThread.quitSafely()
+}
 
 
-    if (renderer.beginFrame(swapChain, System.nanoTime())) {
-        renderer.render(view)
-        renderer.readPixels(0, 0, width, height, bufferDescriptor)
-        renderer.endFrame()
-    }
+fun processImage(image: Image): Bitmap {
+    val buffer = image.planes[0].buffer
+    val data = ByteArray(buffer.remaining())
+    buffer.get(data)
 
-    val screenshotBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-    screenshotBitmap.setPixels(buffer, 0, width, 0, 0, width, height)
+    val yuvImage = YuvImage(data, ImageFormat.YUV_420_888, image.width, image.height, null)
+    val outputStream = ByteArrayOutputStream()
+    yuvImage.compressToJpeg(android.graphics.Rect(0, 0, image.width, image.height), 100, outputStream)
+    val jpegData = outputStream.toByteArray()
 
-    onScreenshotTaken(screenshotBitmap)
+    val bitmap = BitmapFactory.decodeByteArray(jpegData, 0, jpegData.size)
 
-    engine.destroySwapChain(swapChain)
+    return bitmap
 }
 
 
@@ -748,5 +785,31 @@ fun CatalogScreen(items: List<Product>, onItemSelected: (String) -> Unit) {
                 onItemSelected(item.model)
             }
         }
+    }
+}
+
+class CaptureHelper {
+    fun takePhoto(
+        arSceneView: ARSceneView,
+        context: Context
+    ) {
+        val bitmap = Bitmap.createBitmap(
+            arSceneView.width, arSceneView.height,
+            Bitmap.Config.ARGB_8888
+        )
+
+        val handlerThread = HandlerThread("PixelCopier")
+        handlerThread.start()
+
+        CoroutineScope(Dispatchers.IO).launch {
+
+        }
+        PixelCopy.request(arSceneView, bitmap, { copyResult ->
+            if (copyResult === PixelCopy.SUCCESS) {
+                saveImageBitmapToGallery(context, bitmap)
+            }
+            handlerThread.quitSafely()
+        }, Handler(handlerThread.looper))
+
     }
 }
