@@ -5,11 +5,16 @@ import android.graphics.BitmapFactory
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -24,14 +29,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,9 +51,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.mebelshop.mebelshop_mobile.ar.AR2
 import com.mebelshop.mebelshop_mobile.ui.theme.AppTheme
 import com.mebelshop.mebelshop_mobile.ui.theme.AppTypography
 
@@ -55,18 +61,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
              AppTheme {
-                var ar by remember{
-                    mutableStateOf(false)
-                }
-                if(ar){
-                    enableEdgeToEdge()
-                    AR2()
-                }
-                else{
-                    Button(onClick = {ar = true}) {
-                        Text("Toggle AR")
-                    }
-                }
+                 MainScreen()
             }
         }
     }
@@ -80,7 +75,7 @@ class MainActivity : ComponentActivity() {
         val pagerState = rememberPagerState(initialPage = 0){photos.size}
         HorizontalPager(
             state = pagerState,
-            modifier = modifier.width(128.dp)
+            modifier = modifier.width(256.dp)
         ){ page: Int ->
             val bitmapState = getImageFromAssets(photos[page])
             if (null != bitmapState) {
@@ -88,7 +83,7 @@ class MainActivity : ComponentActivity() {
                 Image(
                     bitmap,
                     contentDescription = "example photo",
-                    modifier.size(128.dp, 128.dp)
+                    modifier.size(150.dp, 150.dp)
                 )
             }
         }
@@ -103,7 +98,7 @@ class MainActivity : ComponentActivity() {
                 CardType.LikedDiscount, CardType.Discount-> CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiary)
             }
             Card(shape = RoundedCornerShape(16), colors = colors, modifier = modifier){
-                Box(modifier = Modifier.padding(16.dp)){
+                Box(modifier = Modifier.padding(8.dp)){
                     Column {
                         Box{
                             Box(contentAlignment = Alignment.Center) {
@@ -115,33 +110,23 @@ class MainActivity : ComponentActivity() {
                                         )
                                 )
                             }
-                            Box(contentAlignment = Alignment.TopEnd, modifier = Modifier.size(128.dp)){
+                            Box(contentAlignment = Alignment.TopEnd, modifier = Modifier.size(150.dp)){
                                 val (icon, color) = when(type){
                                     CardType.Common, CardType.Discount -> listOf(Icons.Outlined.FavoriteBorder, Color.White)
                                     CardType.Liked, CardType.LikedDiscount -> listOf(Icons.Filled.Favorite, Color.Red)
                                 }
-                                Icon(imageVector = icon as ImageVector, tint = color as Color, contentDescription = null, modifier = Modifier.padding(16.dp))
+                                Icon(imageVector = icon as ImageVector, tint = color as Color, contentDescription = null, modifier = Modifier.padding(8.dp))
                             }
                         }
                         Column {
                             Text("${product.price} Р", fontWeight = AppTypography.titleSmall.fontWeight)
-                            Text(product.name, modifier = Modifier.width(128.dp), fontWeight = AppTypography.bodySmall.fontWeight, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(product.name, modifier = Modifier.width(256.dp), fontWeight = AppTypography.bodySmall.fontWeight, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
             }
         }
 
-    }
-
-    //@Preview
-    @Composable
-    fun MainCardPreview(){
-        MainCardItem(
-            DataMobile().listProduct!![0],
-            CardType.LikedDiscount,
-            modifier = Modifier
-        )
     }
 
     @Composable
@@ -156,10 +141,13 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun CategoryItem(category: CategoryProduct){
+    fun CategoryItem(category: CategoryProduct, showedCategory: MutableState<CategoryProduct>, showCategory: MutableState<Boolean>){
         val bitmapState = getImageFromAssets(category.image)
         AppTheme{
-            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)){
+            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest), onClick = {
+                showedCategory.value = category
+                showCategory.value = true
+            }){
                 Box(modifier = Modifier.padding(4.dp)) {
                     Column {
                         if (null != bitmapState) {
@@ -178,47 +166,89 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    //@Preview
-    @Composable
-    fun CategoryPreview(){
-        CategoryItem(DataMobile().listCategoryProduct!![0])
-    }
+
 
     @Composable
-    fun CategoryBar(categoryList: List<CategoryProduct>){
+    fun CategoryBar(categoryList: List<CategoryProduct>, showedCategory: MutableState<CategoryProduct>, showCategory: MutableState<Boolean>){
         AppTheme {
-            Card(modifier = Modifier.padding(10.dp)){
-                Text("Категории", fontSize = AppTypography.titleLarge.fontSize, modifier = Modifier.padding(top = 16.dp, start = 16.dp))
+            Card(modifier = Modifier.padding(8.dp)){
+                Text("Категории", fontSize = AppTypography.titleLarge.fontSize, modifier = Modifier.padding(top = 2.dp, start = 16.dp))
                 LazyRow(contentPadding = PaddingValues(10.dp)) {
                     items(categoryList) { category ->
-                        CategoryItem(category)
+                        CategoryItem(category, showedCategory, showCategory)
                     }
                 }
             }
         }
     }
 
-    //@Preview
+
     @Composable
-    fun CategoryBarPreview(){
-        CategoryBar(DataMobile().listCategoryProduct!!)
+    fun MainScreen(){
+        AppTheme{
+            val showedCategory = remember { mutableStateOf(CategoryProduct("0", "0")) }
+            val showCategory = remember { mutableStateOf(false) }
+            Scaffold(
+                topBar = {
+                    Box(modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp)
+                        .background(Color.Red))
+                },
+                bottomBar = {
+                    Box(modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp)
+                        .background(Color.Red))
+                }
+            ){ padding ->
+                Column(modifier = Modifier.padding(padding)) {
+                    CategoryBar(DataMobile().listCategoryProduct!!, showedCategory, showCategory)
+                    Card(modifier = Modifier.padding(16.dp, 8.dp, 16.dp, 0.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)){
+                        LazyVerticalGrid(columns = GridCells.Fixed(2)) {
+                            items(DataMobile().listProduct!!) { product ->
+                                MainCardItem(product, CardType.Common, modifier = Modifier.padding(8.dp))
+                            }
+                        }
+                    }
+                }
+            }
+            if(showCategory.value){
+                CategoryView(showedCategory.value, showCategory)
+            }
+
+        }
+
     }
 
-    @Preview(showSystemUi = true)
+
     @Composable
-    fun MainScreenPreview(){
-        AppTheme {
-            Column {
-                CategoryBar(DataMobile().listCategoryProduct!!)
-                Card(modifier = Modifier.padding(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)){
+    fun CategoryView(category: CategoryProduct, isActive: MutableState<Boolean>){
+        Box(modifier = Modifier.background(Color(0f,0f,0f,0.5f)).fillMaxSize(), contentAlignment = Alignment.Center){
+            Card(modifier = Modifier.padding(16.dp)){
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween){
+                        ElevatedButton(
+                            onClick = { isActive.value = false }
+                        ) {
+                            Text("Назад")
+                        }
+
+                        Text(category.name, fontSize = AppTypography.titleLarge.fontSize, modifier = Modifier.padding(end = 8.dp))
+                    }
+                    HorizontalDivider()
+                    val products by remember { mutableStateOf(
+                        DataMobile().listProduct!!.filter { product -> category in product.categoryProduct }
+                    ) }
                     LazyVerticalGrid(columns = GridCells.Fixed(2)) {
-                        items(DataMobile().listProduct!!) { product ->
-                            MainCardItem(product, CardType.Common, modifier = Modifier.padding(16.dp))
+                        items(products) { product ->
+                            MainCardItem(product, CardType.Common, modifier = Modifier.padding(8.dp))
                         }
                     }
                 }
             }
         }
+        // это для матвея
     }
 }
 
