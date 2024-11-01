@@ -30,6 +30,7 @@ import android.view.Surface
 import android.view.SurfaceView
 import android.view.WindowManager
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -131,7 +132,7 @@ private const val kMaxModelInstances = 10
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AR2(selectedPathToModel: String? = null) {
+fun AR2(selectedPathToModel: String? = null, onBack: () -> Unit) {
     val context = LocalContext.current
     val activity = context as? Activity
 
@@ -142,6 +143,10 @@ fun AR2(selectedPathToModel: String? = null) {
 
     val coroutineScope = rememberCoroutineScope()
     val graphicsLayer = rememberGraphicsLayer()
+
+    BackHandler {
+        onBack()
+    }
 
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -681,86 +686,6 @@ fun saveImageBitmapToGallery(
         Toast.makeText(context, "Ошибка при сохранении: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
     }
 }
-
-@RequiresApi(Build.VERSION_CODES.O)
-fun captureScreenshotFromSurfaceView(activity: Activity?, view: View, onBitmapReady: (Bitmap) -> Unit) {
-    val bitmap = Bitmap.createBitmap(view.viewport.width, view.viewport.height, Bitmap.Config.ARGB_8888)
-
-    PixelCopy.request(activity!!.window, bitmap, { result ->
-        if (result == PixelCopy.SUCCESS) {
-            onBitmapReady(bitmap)
-        } else {
-            Toast.makeText(activity, "Не удалось сделать скриншот", Toast.LENGTH_SHORT).show()
-        }
-    }, Handler(Looper.getMainLooper()))
-}
-
-fun captureARScreenshot(session: Session, sharedCamera: SharedCamera, onScreenshotTaken: (Bitmap) -> Unit) {
-//    val image = frame.acquireCameraImage()
-
-//    if (image.format == ImageFormat.YUV_420_888) {
-//        val yPlane: Image.Plane = image.planes[0]
-//        val uPlane: Image.Plane = image.planes[1]
-//        val vPlane: Image.Plane = image.planes[2]
-//
-//        val yBuffer: ByteBuffer = yPlane.buffer
-//        val uBuffer: ByteBuffer = uPlane.buffer
-//        val vBuffer: ByteBuffer = vPlane.buffer
-//
-//        val ySize = yBuffer.remaining()
-//        val uSize = uBuffer.remaining()
-//        val vSize = vBuffer.remaining()
-//
-//        val nv21ByteArray = ByteArray(ySize + uSize + vSize)
-//
-//        yBuffer.get(nv21ByteArray, 0, ySize)
-//        uBuffer.get(nv21ByteArray, ySize, uSize)
-//        vBuffer.get(nv21ByteArray, ySize + uSize, vSize)
-//
-//        val yuvImage = YuvImage(nv21ByteArray, ImageFormat.NV21, image.width, image.height, null)
-//        val outputStream = ByteArrayOutputStream()
-//        yuvImage.compressToJpeg(Rect(0, 0, image.width, image.height), 100, outputStream)
-//
-//        val bitmap: Bitmap = BitmapFactory.decodeByteArray(outputStream.toByteArray(), 0, outputStream.size())
-//
-//        onScreenshotTaken(bitmap)
-//    }
-
-    val backgroundThread = HandlerThread("ImageReaderThread").apply { start() }
-    val appHandler = Handler(backgroundThread.looper)
-
-    val surfaceList: MutableList<Surface>? = sharedCamera.getArCoreSurfaces()
-
-    val imageReader = ImageReader.newInstance(width, height, ImageFormat.YUV_420_888, 2)
-    surfaceList!!.add(imageReader.surface)
-
-    imageReader.setOnImageAvailableListener({ reader ->
-        val image = reader.acquireLatestImage()
-        image?.let {
-            onScreenshotTaken(processImage(it))
-            it.close()
-        }
-    }, appHandler)
-
-    backgroundThread.quitSafely()
-}
-
-
-fun processImage(image: Image): Bitmap {
-    val buffer = image.planes[0].buffer
-    val data = ByteArray(buffer.remaining())
-    buffer.get(data)
-
-    val yuvImage = YuvImage(data, ImageFormat.YUV_420_888, image.width, image.height, null)
-    val outputStream = ByteArrayOutputStream()
-    yuvImage.compressToJpeg(android.graphics.Rect(0, 0, image.width, image.height), 100, outputStream)
-    val jpegData = outputStream.toByteArray()
-
-    val bitmap = BitmapFactory.decodeByteArray(jpegData, 0, jpegData.size)
-
-    return bitmap
-}
-
 
 @Composable
 fun CatalogItemCard(item: Product, onClick: () -> Unit) {
