@@ -415,11 +415,11 @@ fun AR2(selectedPathToModel: String? = null, onBack: () -> Unit) {
                     modifier = Modifier
                         .align(Alignment.BottomStart),
                     onClick = {
-                        planeRenderer = false
+                        planeRenderer = !planeRenderer
 
                         captureHelper.takePhoto(arSceneView!!, context)
 
-                        planeRenderer = true
+                        planeRenderer = !planeRenderer
                     },
                     shape = RoundedCornerShape(percent = 40)
                 ) {

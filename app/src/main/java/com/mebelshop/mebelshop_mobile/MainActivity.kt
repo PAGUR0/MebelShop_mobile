@@ -90,8 +90,10 @@ class MainActivity : ComponentActivity() {
                     }
                 ){ padding ->
                     if (ARState){
-                        AR2()
-                    }else{
+                        AR2 {
+                            ARState = !ARState
+                        }
+                    } else {
                         MainScreen(modifier = Modifier.padding(padding))
                     }
 
@@ -354,98 +356,112 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun ProductCard(product: Product, isActive: MutableState<Boolean>) {
         val bitmapState = getImageFromAssets(product.images[0])
-        AppTheme {
-            Card() {
-                Scaffold(
-                    topBar = {
-                        Column {
+        var showAr by remember { mutableStateOf(false) }
 
+        AppTheme {
+            if (showAr) {
+                AR2 (selectedPathToModel = product.model){
+                    showAr = false
+                }
+            } else {
+                Card() {
+                    Scaffold(
+                        topBar = {
+                            Column {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    ElevatedButton(onClick = {
+                                        isActive.value = false
+                                    }) { Text("Назад") }
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                        modifier = Modifier.padding(end = 16.dp)
+                                    ) {
+                                        Icon(Icons.Filled.FavoriteBorder, null,)
+                                        Icon(Icons.Filled.Share, null)
+                                    }
+                                }
+                                HorizontalDivider()
+                            }
+                        },
+                        bottomBar = {
                             Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween,
+                                horizontalArrangement = Arrangement.SpaceAround,
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                ElevatedButton(onClick = {
-                                    isActive.value = false
-                                }) { Text("Назад") }
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                    modifier = Modifier.padding(end = 16.dp)
+                                OutlinedButton(
+                                    onClick = {},
+                                    modifier = Modifier.fillMaxWidth(0.45f)
                                 ) {
-                                    Icon(Icons.Filled.FavoriteBorder, null,)
-                                    Icon(Icons.Filled.Share, null)
+                                    Text("Купить", fontSize = AppTypography.bodyLarge.fontSize)
                                 }
-                            }
-                            HorizontalDivider()
-                        }
-                    },
-                    bottomBar = {
-                        Row(
-                            horizontalArrangement = Arrangement.SpaceAround,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            OutlinedButton(onClick = {}, modifier = Modifier.fillMaxWidth(0.45f)) {
-                                Text("Купить", fontSize = AppTypography.bodyLarge.fontSize)
-                            }
-                            Button(onClick = {}, modifier = Modifier.fillMaxWidth(0.9f)) {
-                                Text("Посмотреть в AR", fontSize = AppTypography.bodyLarge.fontSize)
-                            }
-                        }
-                    }
-                ) { padding ->
-                    Box(
-                        modifier = Modifier.padding(padding),
-                        contentAlignment = Alignment.TopStart
-                    ) {
-                        LazyColumn {
-                            if (null != bitmapState) {
-                                val bitmap = bitmapState.asImageBitmap()
-                                item {
-                                    Image(
-                                        bitmap = bitmap,
-                                        "assetsImage",
-                                        modifier = Modifier.size(393.dp),
-                                        colorFilter = null
+                                Button(onClick = {
+                                    showAr = true
+                                }, modifier = Modifier.fillMaxWidth(0.9f)) {
+                                    Text(
+                                        "Посмотреть в AR",
+                                        fontSize = AppTypography.bodyLarge.fontSize
                                     )
                                 }
                             }
-                            item {
-                                ElevatedCard(
-                                    modifier = Modifier.padding(16.dp),
-                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.onPrimary)
-                                ) {
-                                    Column {
-
-                                        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary)) {
-                                            Text(
-                                                product.shop.name_shop,
-                                                modifier = Modifier.padding(2.dp)
-                                            )
-                                        }
-                                        Text(
-                                            product.name,
-                                            fontSize = AppTypography.headlineMedium.fontSize,
-                                            modifier = Modifier.padding(2.dp)
+                        }
+                    ) { padding ->
+                        Box(
+                            modifier = Modifier.padding(padding),
+                            contentAlignment = Alignment.TopStart
+                        ) {
+                            LazyColumn {
+                                if (null != bitmapState) {
+                                    val bitmap = bitmapState.asImageBitmap()
+                                    item {
+                                        Image(
+                                            bitmap = bitmap,
+                                            "assetsImage",
+                                            modifier = Modifier.size(393.dp),
+                                            colorFilter = null
                                         )
                                     }
                                 }
-                            }
-                            item {
-                                ElevatedCard(modifier = Modifier.padding(horizontal = 16.dp)) {
-                                    Column(modifier = Modifier.padding(10.dp)) {
-                                        ExpandableText(
-                                            text = product.description,
-                                            showMoreText = "...->",
-                                            showLessText = "<-",
-                                            fontStyle = AppTypography.bodySmall.fontStyle
-                                        )
-                                        Text(
-                                            "Характеристики",
-                                            fontStyle = AppTypography.bodyLarge.fontStyle,
-                                            modifier = Modifier.padding(vertical = 6.dp)
-                                        )
+                                item {
+                                    ElevatedCard(
+                                        modifier = Modifier.padding(16.dp),
+                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.onPrimary)
+                                    ) {
                                         Column {
-                                            for (attr in product.attributes) {
+
+                                            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary)) {
+                                                Text(
+                                                    product.shop.name_shop,
+                                                    modifier = Modifier.padding(2.dp)
+                                                )
+                                            }
+                                            Text(
+                                                product.name,
+                                                fontSize = AppTypography.headlineMedium.fontSize,
+                                                modifier = Modifier.padding(2.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                                item {
+                                    ElevatedCard(modifier = Modifier.padding(horizontal = 16.dp)) {
+                                        Column(modifier = Modifier.padding(10.dp)) {
+                                            ExpandableText(
+                                                text = product.description,
+                                                showMoreText = "...->",
+                                                showLessText = "<-",
+                                                fontStyle = AppTypography.bodySmall.fontStyle
+                                            )
+                                            Text(
+                                                "Характеристики",
+                                                fontStyle = AppTypography.bodyLarge.fontStyle,
+                                                modifier = Modifier.padding(vertical = 6.dp)
+                                            )
+                                            Column {
+                                                for (attr in product.attributes) {
                                                     Column {
                                                         Row(
                                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -457,6 +473,7 @@ class MainActivity : ComponentActivity() {
                                                         HorizontalDivider()
                                                     }
                                                 }
+                                            }
                                         }
                                     }
                                 }
