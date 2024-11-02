@@ -139,12 +139,6 @@ private const val kModelFile8 = "models/table_1.glb"
 private const val kMaxModelInstances = 10
 
 
-@RequiresApi(Build.VERSION_CODES.O)
-@Preview
-@Composable
-fun AR2Preview(){
-    AR2(kModelFile6, onBack = {})
-}
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -361,7 +355,8 @@ fun AR2(selectedPathToModel: String? = null, onBack: () -> Unit) {
                     Icon(
                         SearchIcon,
                         contentDescription = "Поиск",
-                        tint = Color.White
+                        tint = Color.White,
+                        modifier = Modifier.padding(2.5.dp)
                     )
                 }
 
@@ -383,7 +378,8 @@ fun AR2(selectedPathToModel: String? = null, onBack: () -> Unit) {
                 }
                 Column(
                     modifier = Modifier
-                        .align(Alignment.TopEnd)
+                        .align(Alignment.TopEnd),
+                    verticalArrangement = Arrangement.spacedBy(5.dp)
                 )
                 {
                     Button(
