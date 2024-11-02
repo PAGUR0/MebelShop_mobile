@@ -2,6 +2,7 @@ package com.mebelshop.mebelshop_mobile.ar
 
 import Arrow_left
 import Arrow_right
+import CrosshairSvgrepoCom
 import Duplicate
 import Plane_off
 import Plane_on
@@ -73,6 +74,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.google.android.filament.Engine
 import com.google.android.filament.View
@@ -349,11 +351,19 @@ fun AR2(selectedPathToModel: String? = null, onBack: () -> Unit) {
                 }
 
                 if (showCrosshair) {
-                    Box(
+//                    Box(
+//                        modifier = Modifier
+//                            .size(24.dp)
+//                            .background(Color.Red, shape = CircleShape)
+//                            .align(Alignment.Center)
+//                    )
+
+                    Icon(
+                        painter = painterResource(R.drawable.crosshair),
+                        contentDescription = "crosshair",
                         modifier = Modifier
-                            .size(24.dp)
-                            .background(Color.Red, shape = CircleShape)
                             .align(Alignment.Center)
+                            .size(24.dp)
                     )
                 }
                 Column(

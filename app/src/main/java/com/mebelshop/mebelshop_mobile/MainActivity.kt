@@ -1,5 +1,6 @@
 package com.mebelshop.mebelshop_mobile
 
+import android.content.res.Resources.Theme
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
@@ -201,14 +202,12 @@ class MainActivity : ComponentActivity() {
                 topBar = {
                     Box(modifier = Modifier
                         .fillMaxWidth()
-                        .height(50.dp)
-                        .background(Color.Red))
+                    )
                 },
                 bottomBar = {
                     Box(modifier = Modifier
                         .fillMaxWidth()
-                        .height(50.dp)
-                        .background(Color.Red))
+                        .height(5.dp))
                 }
             ){ padding ->
                 Column(modifier = Modifier.padding(padding)) {

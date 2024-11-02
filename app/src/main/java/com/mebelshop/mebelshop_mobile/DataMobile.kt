@@ -11,7 +11,8 @@ class DataMobile {
             CategoryProduct("Мебель для маломобильных граждан", "image/table_1_1.png"),
             CategoryProduct("Столы", "image/table_1_1.png"),
             CategoryProduct("Стулья", "image/chair_2_1.png"),
-            CategoryProduct("Туалеты", "image/toilet_1.png")
+            CategoryProduct("Сантехника", "image/toilet_1.png"),
+            CategoryProduct("Люстры", "image/Ceiling_lamp_003_1.png")
         )
 
         listShop = listOf(
@@ -36,6 +37,25 @@ class DataMobile {
                     "Материалы:" to "Сталь, Светлое дерево, Полимерное защитное покрытие, Полимерно-порошковая краска"
                 ),
                 model = "models/table_1.glb"
+            ),
+
+            Product(
+                "Парта",
+                5000,
+                null,
+                listShop!![0],
+                listOf(listCategoryProduct!![0], listCategoryProduct!![2]),
+                images = listOf("image/Table_001_4.png", "image/Table_001_2.png", "image/Table_001_3.png", "image/Table_001.png"),
+                description = "Отталкиваясь от размеров инвалидных колясок для учеников и предписаниям, стол для инвалидов колясочников обязан быть регулируемым по высоте, удерживать высокую вертикальную нагрузку, располагать свободным пространством перед ногами сидящего",
+                attributes = mapOf(
+                    "Размер:" to "400х800х450",
+                    "Тип:" to "Нерегулируемый",
+                    "Высота стола:" to "450",
+                    "Размер столешницы:" to "800Х400",
+                    "Цвет:" to "Черный, Светлое дерево",
+                    "Материалы:" to "Сталь, Светлое дерево, Полимерное защитное покрытие, Полимерно-порошковая краска"
+                ),
+                model = "models/Table.glb"
             ),
 
             Product(
@@ -71,28 +91,90 @@ class DataMobile {
                     "Количество ножек:" to "4",
                     "Макс нагрузка:" to  "120 кг",
                     "Цвет:" to "Черный, Коричневый",
-                    "Материалы:" to "Платик, Фанера, Ткань, Поролон"
+                    "Материалы:" to "Пластик, Фанера, Ткань, Поролон"
                 ),
                 model = "models/office_chair_1.glb"
             ),
 
             Product(
+                "Бумажный абажур",
+                1209,
+                null,
+                listShop!![0],
+                listOf(listCategoryProduct!![5]),
+                images = listOf("image/Ceiling_lamp_001_1.png","image/Ceiling_lamp_001_2.png","image/Ceiling_lamp_001_3.png","image/Ceiling_lamp_004_1.png", ),
+                description = "Абажур из бумаги",
+                attributes = mapOf(
+                    "Размер:" to "600х600х1000",
+                    "Цвет:" to "Белый",
+                    "Материалы:" to "Бумага, Пластик"
+                ),
+                model = "models/Ceiling_lamp_001.glb"
+            ),
+
+            Product(
+                "Люстра с 3 плафонами",
+                6500,
+                8000,
+                listShop!![0],
+                listOf(listCategoryProduct!![5]),
+                images = listOf("image/Ceiling_lamp_003_1.png","image/Ceiling_lamp_003_2.png","image/Ceiling_lamp_003_3.png","image/Ceiling_lamp_003_4.png", ),
+                description = "Люстра с 3 плафонами",
+                attributes = mapOf(
+                    "Размер:" to "200х1000х1000",
+                    "Цвет:" to "Коричневый, Черный",
+                    "Материалы:" to "Пластик"
+                ),
+                model = "models/Ceiling_lamp_003.glb"
+            ),
+
+            Product(
+                "Круглая люстра",
+                5500,
+                null,
+                listShop!![0],
+                listOf(listCategoryProduct!![5]),
+                images = listOf("image/Ceiling_lamp_002_1.png","image/Ceiling_lamp_002_2.png","image/Ceiling_lamp_002_3.png","image/Ceiling_lamp_002_4.png", ),
+                description = "Круглая люстра",
+                attributes = mapOf(
+                    "Размер:" to "400х400х1000",
+                    "Цвет:" to "Белый",
+                    "Материалы:" to "Стекло, Сталь"
+                ),
+                model = "models/Ceiling_lamp_002.glb"
+            ),
+
+            Product(
+                "Люстра \"Дождь\"",
+                5500,
+                null,
+                listShop!![0],
+                listOf(listCategoryProduct!![5]),
+                images = listOf("image/Ceiling_lamp_004_1.png","image/Ceiling_lamp_004_2.png","image/Ceiling_lamp_004_3.png","image/Ceiling_lamp_004_4.png", ),
+                description = "Люстра \"Дождь\"",
+                attributes = mapOf(
+                    "Размер:" to "270х270х1000",
+                    "Цвет:" to "Золотой",
+                    "Материалы:" to "Пластик, Стекло, Сталь"
+                ),
+                model = "models/Ceiling_lamp_004.glb"
+            ),
+
+            Product(
                 "Чаша Генуя",
-                32199,
+                32907,
                 null,
                 listShop!![0],
                 listOf(listCategoryProduct!![4]),
-                images = listOf("image/toilet_1.png"),
-                description = "Нету человека, кто не ходит в туалет\n" +
-                        "Плохо человеку, у кого туалета нет\n" +
-                        "Чтоб в штаны не наложить, туалет минуя\n" +
-                        "Люди вдруг изобрели себе чашу Генуя",
+                images = listOf("image/toilet_1.png", ),
+                description = "Чаша Генуя",
                 attributes = mapOf(
-                    "Размер:" to "610x513x255",
-                    "Цвет:" to "Белый"
+                    "Размер:" to "400х600х300",
+                    "Цвет:" to "Белый",
+                    "Материалы:" to "Керамика"
                 ),
                 model = "models/toilet_1.glb"
             )
-        )
+            )
     }
 }
