@@ -38,6 +38,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.FabPosition
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
@@ -67,6 +68,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import com.mebelshop.mebelshop_mobile.ar.AR2
 import com.mebelshop.mebelshop_mobile.ui.theme.AppTheme
 import com.mebelshop.mebelshop_mobile.ui.theme.AppTypography
 
@@ -75,8 +77,26 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
+            var ARState by remember { mutableStateOf(false) }
             AppTheme {
-                MainScreen()
+                Scaffold(
+                    floatingActionButtonPosition = FabPosition.Center,
+                    floatingActionButton = {
+                        Button(onClick = {
+                            ARState = !ARState
+                        }) {
+                            Text("AR")
+                        }
+                    }
+                ){ padding ->
+                    if (ARState){
+                        AR2()
+                    }else{
+                        MainScreen(modifier = Modifier.padding(padding))
+                    }
+
+                }
+
             }
         }
     }
@@ -238,13 +258,13 @@ class MainActivity : ComponentActivity() {
 
 
     @Composable
-    fun MainScreen() {
+    fun MainScreen(modifier: Modifier) {
         AppTheme {
             val showedCategory = remember { mutableStateOf(CategoryProduct("0", "0")) }
             val showCategory = remember { mutableStateOf(false) }
             val showedCard = remember { mutableStateOf(DataMobile().listProduct!![0])}
             val showCard = remember { mutableStateOf(false) }
-            Scaffold() { padding ->
+            Scaffold(modifier = modifier) { padding ->
                 Column(modifier = Modifier.padding(padding)) {
                     CategoryBar(DataMobile().listCategoryProduct!!, showedCategory, showCategory)
                     Card(
