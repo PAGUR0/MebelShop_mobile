@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -245,24 +244,7 @@ class MainActivity : ComponentActivity() {
             val showCategory = remember { mutableStateOf(false) }
             val showedCard = remember { mutableStateOf(DataMobile().listProduct!![0])}
             val showCard = remember { mutableStateOf(false) }
-            Scaffold(
-                topBar = {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp)
-                            .background(Color.Red)
-                    )
-                },
-                bottomBar = {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp)
-                            .background(Color.Red)
-                    )
-                }
-            ) { padding ->
+            Scaffold() { padding ->
                 Column(modifier = Modifier.padding(padding)) {
                     CategoryBar(DataMobile().listCategoryProduct!!, showedCategory, showCategory)
                     Card(
