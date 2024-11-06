@@ -88,6 +88,8 @@ import com.google.ar.core.TrackingFailureReason
 import com.mebelshop.mebelshop_mobile.DataMobile
 import com.mebelshop.mebelshop_mobile.Product
 import com.mebelshop.mebelshop_mobile.R
+import com.mebelshop.mebelshop_mobile.model.ARModel
+import com.mebelshop.mebelshop_mobile.viewmodel.ARViewModel
 import dev.romainguy.kotlin.math.Float3
 import io.github.sceneview.ar.ARScene
 import io.github.sceneview.ar.ARSceneView
@@ -134,7 +136,9 @@ private const val kMaxModelInstances = 10
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AR2(selectedPathToModel: String? = null, onBack: () -> Unit) {
+fun AR(selectedPathToModel: String? = null, onBack: () -> Unit) {
+    val viewModel = ARViewModel(ARModel())
+    // TODO
     val context = LocalContext.current
     val activity = context as? Activity
 
@@ -204,7 +208,6 @@ fun AR2(selectedPathToModel: String? = null, onBack: () -> Unit) {
         var sharedSession: Session? = null
         var sharedCamera: SharedCamera? = null
 
-        val captureHelper = CaptureHelper()
         var arSceneView: ARSceneView? = null
 
         Scaffold { contentPadding ->
@@ -417,7 +420,7 @@ fun AR2(selectedPathToModel: String? = null, onBack: () -> Unit) {
                     onClick = {
                         planeRenderer = !planeRenderer
 
-                        captureHelper.takePhoto(arSceneView!!, context)
+                        viewModel.takePhoto(arSceneView!!, context)
 
                         planeRenderer = !planeRenderer
                     },
@@ -663,39 +666,7 @@ fun getScreenSize(context: Context): Pair<Int, Int> {
     return displayMetrics.widthPixels to displayMetrics.heightPixels
 }
 
-fun saveImageBitmapToGallery(
-    context: Context,
-    bitmap: Bitmap,
-    fileName: String = "Screenshot_${System.currentTimeMillis()}"
-) {
-    val contentResolver = context.contentResolver
-    val imageUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
-    } else {
-        MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-    }
 
-    val contentValues = ContentValues().apply {
-        put(MediaStore.Images.Media.DISPLAY_NAME, "$fileName.jpg")
-        put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-        put(MediaStore.Images.Media.WIDTH, bitmap.width)
-        put(MediaStore.Images.Media.HEIGHT, bitmap.height)
-    }
-
-    try {
-        val uri = contentResolver.insert(imageUri, contentValues)
-        uri?.let {
-            val outputStream: OutputStream? = contentResolver.openOutputStream(it)
-            outputStream?.use { stream ->
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream)
-                stream.flush()
-                Toast.makeText(context, "Сохранено в галерею", Toast.LENGTH_SHORT).show()
-            }
-        } ?: throw Exception("Не удалось создать URI для изображения")
-    } catch (e: Exception) {
-        Toast.makeText(context, "Ошибка при сохранении: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
-    }
-}
 
 @Composable
 fun CatalogItemCard(item: Product, onClick: () -> Unit) {
@@ -720,31 +691,5 @@ fun CatalogScreen(items: List<Product>, onItemSelected: (String) -> Unit) {
                 onItemSelected(item.model)
             }
         }
-    }
-}
-
-class CaptureHelper {
-    fun takePhoto(
-        arSceneView: ARSceneView,
-        context: Context
-    ) {
-        val bitmap = Bitmap.createBitmap(
-            arSceneView.width, arSceneView.height,
-            Bitmap.Config.ARGB_8888
-        )
-
-        val handlerThread = HandlerThread("PixelCopier")
-        handlerThread.start()
-
-        CoroutineScope(Dispatchers.IO).launch {
-
-        }
-        PixelCopy.request(arSceneView, bitmap, { copyResult ->
-            if (copyResult === PixelCopy.SUCCESS) {
-                saveImageBitmapToGallery(context, bitmap)
-            }
-            handlerThread.quitSafely()
-        }, Handler(handlerThread.looper))
-
     }
 }

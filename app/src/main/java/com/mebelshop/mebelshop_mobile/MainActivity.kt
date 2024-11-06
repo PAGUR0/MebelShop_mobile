@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -49,7 +50,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -68,37 +71,34 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import com.mebelshop.mebelshop_mobile.ar.AR2
+import androidx.navigation.NavController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.mebelshop.mebelshop_mobile.ar.ARScreen
+import com.mebelshop.mebelshop_mobile.model.MainModel
 import com.mebelshop.mebelshop_mobile.ui.theme.AppTheme
 import com.mebelshop.mebelshop_mobile.ui.theme.AppTypography
+import com.mebelshop.mebelshop_mobile.viewmodel.MainViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val viewModel = MainViewModel(MainModel())
+        viewModel.getProducts()
+        viewModel.filterProducts(CategoryProduct("Все категории", image = "image/all.png"))
         setContent {
-            var ARState by remember { mutableStateOf(false) }
-            AppTheme {
-                Scaffold(
-                    floatingActionButtonPosition = FabPosition.Center,
-                    floatingActionButton = {
-                        Button(onClick = {
-                            ARState = !ARState
-                        }) {
-                            Text("AR")
-                        }
+            AppTheme(dynamicColor = false){
+                val navController = rememberNavController()
+                NavHost(navController, startDestination = "main_screen") {
+                    composable("main_screen") {
+                        MainScreen(viewModel, navController)
                     }
-                ){ padding ->
-                    if (ARState){
-                        AR2 {
-                            ARState = !ARState
-                        }
-                    } else {
-                        MainScreen(modifier = Modifier.padding(padding))
+                    composable("ar_screen") {
+                        ARScreen()
                     }
-
                 }
-
             }
         }
     }
@@ -115,12 +115,12 @@ class MainActivity : ComponentActivity() {
             modifier = modifier.width(256.dp)
         ) { page: Int ->
             val bitmapState = getImageFromAssets(photos[page])
-            if (null != bitmapState) {
-                val bitmap = bitmapState.asImageBitmap()
+            bitmapState?.let {
+                val bitmap = it.asImageBitmap()
                 Image(
                     bitmap,
                     contentDescription = "example photo",
-                    modifier.size(150.dp, 150.dp)
+                    modifier = Modifier.size(150.dp)
                 )
             }
         }
@@ -145,9 +145,7 @@ class MainActivity : ComponentActivity() {
                                 PhotoCarousel(
                                     product.images, modifier = Modifier
                                         .padding(bottom = 5.dp)
-                                        .clip(
-                                            RoundedCornerShape(16)
-                                        )
+                                        .clip(RoundedCornerShape(16))
                                 )
                             }
                             Box(
@@ -155,15 +153,8 @@ class MainActivity : ComponentActivity() {
                                 modifier = Modifier.size(150.dp)
                             ) {
                                 val (icon, color) = when (type) {
-                                    CardType.Common, CardType.Discount -> listOf(
-                                        Icons.Outlined.FavoriteBorder,
-                                        Color.White
-                                    )
-
-                                    CardType.Liked, CardType.LikedDiscount -> listOf(
-                                        Icons.Filled.Favorite,
-                                        Color.Red
-                                    )
+                                    CardType.Common, CardType.Discount -> listOf(Icons.Outlined.FavoriteBorder, Color.White)
+                                    CardType.Liked, CardType.LikedDiscount -> listOf(Icons.Filled.Favorite, Color.Red)
                                 }
                                 Icon(
                                     imageVector = icon as ImageVector,
@@ -189,7 +180,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-
     }
 
     @Composable
@@ -197,35 +187,29 @@ class MainActivity : ComponentActivity() {
         var bitmapState by remember { mutableStateOf<Bitmap?>(null) }
         val context = LocalContext.current
 
-        LaunchedEffect(Unit) {
+        LaunchedEffect(name) {
             bitmapState = BitmapFactory.decodeStream(context.assets.open(name))
         }
         return bitmapState
     }
 
     @Composable
-    fun CategoryItem(
-        category: CategoryProduct,
-        showedCategory: MutableState<CategoryProduct>,
-        showCategory: MutableState<Boolean>
-    ) {
+    fun CategoryItem(category: CategoryProduct, viewModel: MainViewModel) {
         val bitmapState = getImageFromAssets(category.image)
         AppTheme {
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
                 onClick = {
-                    showedCategory.value = category
-                    showCategory.value = true
-                }) {
+                    viewModel.filterProducts(category)
+                }
+            ) {
                 Box(modifier = Modifier.padding(4.dp)) {
                     Column {
-                        if (null != bitmapState) {
-                            val bitmap = bitmapState.asImageBitmap()
+                        bitmapState?.let { bitmap ->
                             Image(
-                                bitmap = bitmap,
-                                "assetsImage",
-                                modifier = Modifier.size(100.dp),
-                                colorFilter = null
+                                bitmap = bitmap.asImageBitmap(),
+                                contentDescription = "assetsImage",
+                                modifier = Modifier.size(100.dp)
                             )
                             Text(category.name, modifier = Modifier.width(140.dp))
                         }
@@ -235,13 +219,8 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-
     @Composable
-    fun CategoryBar(
-        categoryList: List<CategoryProduct>,
-        showedCategory: MutableState<CategoryProduct>,
-        showCategory: MutableState<Boolean>
-    ) {
+    fun CategoryBar(categoryList: List<CategoryProduct>, viewModel: MainViewModel) {
         AppTheme {
             Card(modifier = Modifier.padding(8.dp)) {
                 Text(
@@ -250,31 +229,43 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.padding(top = 2.dp, start = 16.dp)
                 )
                 LazyRow(contentPadding = PaddingValues(10.dp)) {
-                    items(categoryList) { category ->
-                        CategoryItem(category, showedCategory, showCategory)
+                    items(listOf(CategoryProduct("Все категории", image = "image/all.png")) + categoryList) { category ->
+                        CategoryItem(category, viewModel)
                     }
                 }
             }
         }
     }
 
-
     @Composable
-    fun MainScreen(modifier: Modifier) {
+    fun MainScreen(viewModel: MainViewModel, navController: NavController) {
+        val filteredProducts by viewModel.filteredProducts.collectAsState(emptyList())
+        val products = remember { mutableStateListOf<Product>() }
+
+        LaunchedEffect(filteredProducts) {
+            products.clear()
+            products.addAll(filteredProducts)
+        }
+
         AppTheme {
-            val showedCategory = remember { mutableStateOf(CategoryProduct("0", "0")) }
-            val showCategory = remember { mutableStateOf(false) }
-            val showedCard = remember { mutableStateOf(DataMobile().listProduct!![0])}
+            val showedCard = remember { mutableStateOf(DataMobile().listProduct!![0]) }
             val showCard = remember { mutableStateOf(false) }
-            Scaffold(modifier = modifier) { padding ->
+            Scaffold(
+                floatingActionButton = {
+                    Button(onClick = { navController.navigate("ar_screen") }) {
+                        Text("AR")
+                    }
+                },
+                floatingActionButtonPosition = FabPosition.Center
+            ) { padding ->
                 Column(modifier = Modifier.padding(padding)) {
-                    CategoryBar(DataMobile().listCategoryProduct!!, showedCategory, showCategory)
+                    CategoryBar(DataMobile().listCategoryProduct!!,viewModel)
                     Card(
                         modifier = Modifier.padding(16.dp, 8.dp, 16.dp, 0.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
                     ) {
                         LazyVerticalGrid(columns = GridCells.Fixed(2)) {
-                            items(DataMobile().listProduct!!) { product ->
+                            items(products) { product ->
                                 MainCardItem(
                                     product,
                                     CardType.Common,
@@ -287,15 +278,12 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
-            if (showCategory.value) {
-                CategoryView(showedCategory.value, showCategory)
-            }
-            if(showCard.value){
+            if (showCard.value) {
                 ProductCard(showedCard.value, showCard)
             }
         }
-
     }
+
 
 
     @Composable
@@ -360,9 +348,7 @@ class MainActivity : ComponentActivity() {
 
         AppTheme {
             if (showAr) {
-                AR2 (selectedPathToModel = product.model){
-                    showAr = false
-                }
+
             } else {
                 Card() {
                     Scaffold(
@@ -477,7 +463,7 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
                                 }
-                            }
+                                }
                         }
                     }
                 }

@@ -67,7 +67,7 @@ private const val kMaxModelInstances = 10
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AR() {
+fun ARScreen() {
     val coroutineScope = rememberCoroutineScope()
 
     var selectedModel by remember { mutableStateOf<String?>(null) }
