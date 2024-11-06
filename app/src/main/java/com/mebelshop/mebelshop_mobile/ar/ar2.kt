@@ -33,6 +33,7 @@ import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -50,10 +51,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
@@ -71,10 +75,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.google.android.filament.Engine
 import com.google.android.filament.View
@@ -88,8 +94,8 @@ import com.google.ar.core.TrackingFailureReason
 import com.mebelshop.mebelshop_mobile.DataMobile
 import com.mebelshop.mebelshop_mobile.Product
 import com.mebelshop.mebelshop_mobile.R
-import com.mebelshop.mebelshop_mobile.model.ARModel
-import com.mebelshop.mebelshop_mobile.viewmodel.ARViewModel
+import com.mebelshop.mebelshop_mobile.getImageFromAssets
+import com.mebelshop.mebelshop_mobile.ui.theme.AppTypography
 import dev.romainguy.kotlin.math.Float3
 import io.github.sceneview.ar.ARScene
 import io.github.sceneview.ar.ARSceneView
@@ -133,12 +139,11 @@ private const val kModelFile8 = "models/table_1.glb"
 private const val kMaxModelInstances = 10
 
 
+
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AR(selectedPathToModel: String? = null, onBack: () -> Unit) {
-    val viewModel = ARViewModel(ARModel())
-    // TODO
+fun AR2(selectedPathToModel: String? = null, onBack: () -> Unit) {
     val context = LocalContext.current
     val activity = context as? Activity
 
@@ -208,6 +213,7 @@ fun AR(selectedPathToModel: String? = null, onBack: () -> Unit) {
         var sharedSession: Session? = null
         var sharedCamera: SharedCamera? = null
 
+        val captureHelper = CaptureHelper()
         var arSceneView: ARSceneView? = null
 
         Scaffold { contentPadding ->
@@ -326,7 +332,7 @@ fun AR(selectedPathToModel: String? = null, onBack: () -> Unit) {
                             }
                             Log.d("=POSITION=", "${node!!.worldQuaternion.xyz}")
                         }
-                        )
+                    )
                 ) {
                     arSceneView = this
                 }
@@ -349,7 +355,8 @@ fun AR(selectedPathToModel: String? = null, onBack: () -> Unit) {
                     Icon(
                         SearchIcon,
                         contentDescription = "Поиск",
-                        tint = Color.White
+                        tint = Color.White,
+                        modifier = Modifier.padding(2.5.dp)
                     )
                 }
 
@@ -371,7 +378,8 @@ fun AR(selectedPathToModel: String? = null, onBack: () -> Unit) {
                 }
                 Column(
                     modifier = Modifier
-                        .align(Alignment.TopEnd)
+                        .align(Alignment.TopEnd),
+                    verticalArrangement = Arrangement.spacedBy(5.dp)
                 )
                 {
                     Button(
@@ -395,7 +403,7 @@ fun AR(selectedPathToModel: String? = null, onBack: () -> Unit) {
 
                     Button(
                         modifier = Modifier
-                        .size(50.dp) ,
+                            .size(50.dp) ,
                         onClick = {
                             childNodes.clear()
                         },
@@ -420,7 +428,7 @@ fun AR(selectedPathToModel: String? = null, onBack: () -> Unit) {
                     onClick = {
                         planeRenderer = !planeRenderer
 
-                        viewModel.takePhoto(arSceneView!!, context)
+                        captureHelper.takePhoto(arSceneView!!, context)
 
                         planeRenderer = !planeRenderer
                     },
@@ -666,21 +674,69 @@ fun getScreenSize(context: Context): Pair<Int, Int> {
     return displayMetrics.widthPixels to displayMetrics.heightPixels
 }
 
+fun saveImageBitmapToGallery(
+    context: Context,
+    bitmap: Bitmap,
+    fileName: String = "Screenshot_${System.currentTimeMillis()}"
+) {
+    val contentResolver = context.contentResolver
+    val imageUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+    } else {
+        MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+    }
 
+    val contentValues = ContentValues().apply {
+        put(MediaStore.Images.Media.DISPLAY_NAME, "$fileName.jpg")
+        put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+        put(MediaStore.Images.Media.WIDTH, bitmap.width)
+        put(MediaStore.Images.Media.HEIGHT, bitmap.height)
+    }
+
+    try {
+        val uri = contentResolver.insert(imageUri, contentValues)
+        uri?.let {
+            val outputStream: OutputStream? = contentResolver.openOutputStream(it)
+            outputStream?.use { stream ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream)
+                stream.flush()
+                Toast.makeText(context, "Сохранено в галерею", Toast.LENGTH_SHORT).show()
+            }
+        } ?: throw Exception("Не удалось создать URI для изображения")
+    } catch (e: Exception) {
+        Toast.makeText(context, "Ошибка при сохранении: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+    }
+}
 
 @Composable
 fun CatalogItemCard(item: Product, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .padding(vertical = 2.5.dp)
             .clickable(onClick = onClick)
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(text = item.name)
+        Row (verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween){
+            val bitmapState = getImageFromAssets(item.images[0])
+            if (null != bitmapState) {
+                val bitmap = bitmapState.asImageBitmap()
+                Image(
+                    bitmap,
+                    contentDescription = "example photo",
+                    modifier = Modifier.size(40.dp, 40.dp)
+                )
+            }
+            Text(item.name)
+            Icon(Icons.Filled.FavoriteBorder, null)
         }
     }
+
+}
+
+@Preview
+@Composable
+fun CatalogItemCardPreview(){
+    CatalogItemCard(DataMobile().listProduct!![0], onClick = {})
 }
 
 @Composable
@@ -691,5 +747,31 @@ fun CatalogScreen(items: List<Product>, onItemSelected: (String) -> Unit) {
                 onItemSelected(item.model)
             }
         }
+    }
+}
+
+class CaptureHelper {
+    fun takePhoto(
+        arSceneView: ARSceneView,
+        context: Context
+    ) {
+        val bitmap = Bitmap.createBitmap(
+            arSceneView.width, arSceneView.height,
+            Bitmap.Config.ARGB_8888
+        )
+
+        val handlerThread = HandlerThread("PixelCopier")
+        handlerThread.start()
+
+        CoroutineScope(Dispatchers.IO).launch {
+
+        }
+        PixelCopy.request(arSceneView, bitmap, { copyResult ->
+            if (copyResult === PixelCopy.SUCCESS) {
+                saveImageBitmapToGallery(context, bitmap)
+            }
+            handlerThread.quitSafely()
+        }, Handler(handlerThread.looper))
+
     }
 }

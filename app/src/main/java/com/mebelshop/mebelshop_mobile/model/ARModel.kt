@@ -9,14 +9,117 @@ import android.os.HandlerThread
 import android.provider.MediaStore
 import android.view.PixelCopy
 import android.widget.Toast
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.Color
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import com.google.android.filament.Engine
+import com.google.android.filament.gltfio.FilamentAsset
+import com.google.ar.core.Anchor
 import io.github.sceneview.ar.ARSceneView
+import io.github.sceneview.ar.node.AnchorNode
+import io.github.sceneview.loaders.MaterialLoader
+import io.github.sceneview.loaders.ModelLoader
+import io.github.sceneview.model.ModelInstance
+import io.github.sceneview.node.CubeNode
+import io.github.sceneview.node.ModelNode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.OutputStream
 
-class ARModel(){
-    fun saveImageBitmapToGallery(
+private const val kMaxModelInstances = 10
+
+class ARModel {
+    private var _listProduct = MutableLiveData<List<Product>>()
+    val listProduct: LiveData<List<Product>> get() = _listProduct
+
+
+    fun refreshListProduct() {
+        _listProduct.postValue(DataMobile().listProduct)
+    }
+
+    fun createAnchorNode(
+        engine: Engine,
+        modelLoader: ModelLoader,
+        materialLoader: MaterialLoader,
+        modelInstances: MutableList<ModelInstance>,
+        anchor: Anchor,
+        modelPath: String
+    ): AnchorNode {
+        val anchorNode = AnchorNode(engine = engine, anchor = anchor)
+        val modelNode = ModelNode(
+            modelInstance = modelInstances.apply {
+                if (isEmpty()) {
+                    this += modelLoader.createInstancedModel(modelPath, kMaxModelInstances)
+                }
+            }.removeLast()
+        ).apply {
+            isEditable = true
+            isScaleEditable = false
+            isPositionEditable = false
+            isRotationEditable = false
+        }
+        val boundingBoxNode = CubeNode(
+            engine,
+            size = modelNode.extents,
+            center = modelNode.center,
+            materialInstance = materialLoader.createColorInstance(Color.White.copy(alpha = 0.5f))
+        ).apply {
+            isVisible = false
+        }
+        modelNode.addChildNode(boundingBoxNode)
+        anchorNode.addChildNode(modelNode)
+
+        listOf(modelNode, anchorNode).forEach {
+            it.onEditingChanged = { editingTransforms ->
+                boundingBoxNode.isVisible = editingTransforms.isNotEmpty()
+            }
+        }
+        return anchorNode
+    }
+
+    fun createAnchorNode(
+        engine: Engine,
+        modelLoader: ModelLoader,
+        materialLoader: MaterialLoader,
+        modelInstances: MutableList<ModelInstance>,
+        anchor: Anchor,
+        model: FilamentAsset
+    ): AnchorNode {
+        val anchorNode = AnchorNode(engine = engine, anchor = anchor)
+        val modelNode = ModelNode(
+            modelInstance = modelInstances.apply {
+                if (isEmpty()) {
+                    this += modelLoader.createInstance(model) as ModelInstance
+                }
+            }.removeLast()
+        ).apply {
+            isEditable = true
+            isScaleEditable = false
+            isPositionEditable = false
+            isRotationEditable = false
+        }
+        val boundingBoxNode = CubeNode(
+            engine,
+            size = modelNode.extents,
+            center = modelNode.center,
+            materialInstance = materialLoader.createColorInstance(Color.White.copy(alpha = 0.5f))
+        ).apply {
+            isVisible = false
+        }
+        modelNode.addChildNode(boundingBoxNode)
+        anchorNode.addChildNode(modelNode)
+
+        listOf(modelNode, anchorNode).forEach {
+            it.onEditingChanged = { editingTransforms ->
+                boundingBoxNode.isVisible = editingTransforms.isNotEmpty()
+            }
+        }
+        return anchorNode
+    }
+
+    private fun saveImageBitmapToGallery(
         context: Context,
         bitmap: Bitmap,
         fileName: String = "Screenshot_${System.currentTimeMillis()}"
@@ -50,8 +153,7 @@ class ARModel(){
         }
     }
 
-
-    fun takePhoto(
+    fun makeBitmapFromScreenshot(
         arSceneView: ARSceneView,
         context: Context
     ) {
@@ -67,12 +169,11 @@ class ARModel(){
 
         }
         PixelCopy.request(arSceneView, bitmap, { copyResult ->
-            if (copyResult == PixelCopy.SUCCESS) {
+            if (copyResult === PixelCopy.SUCCESS) {
                 saveImageBitmapToGallery(context, bitmap)
             }
             handlerThread.quitSafely()
         }, Handler(handlerThread.looper))
 
     }
-
 }
