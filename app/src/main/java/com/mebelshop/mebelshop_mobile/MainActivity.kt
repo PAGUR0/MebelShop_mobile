@@ -7,16 +7,14 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -47,6 +45,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -239,6 +238,41 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
+    fun SearchBar(
+        query: String,
+        onQueryChange: (String) -> Unit,
+        onSearch: () -> Unit
+    ) {
+        var text by remember { mutableStateOf(query) }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            TextField(
+                value = text,
+                onValueChange = {
+                    text = it
+                    onQueryChange(it) // Обновляем состояние родителя
+                },
+                placeholder = { Text("Поиск...") },
+                modifier = Modifier.weight(1f),
+                singleLine = true
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Button(onClick = {
+                onSearch() // Выполняем поиск
+            }) {
+                Text("Поиск")
+            }
+        }
+    }
+
+
+
+    @Composable
     fun MainScreen(viewModel: MainViewModel, navController: NavController) {
         val filteredProducts by viewModel.filteredProducts.collectAsState(emptyList())
         val products = remember { mutableStateListOf<Product>() }
@@ -279,130 +313,119 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+
             if (showCard.value) {
                 ProductCard(showedCard.value, showCard)
             }
+
         }
     }
 
 
     @Composable
     fun ProductCard(product: Product, isActive: MutableState<Boolean>) {
-        val bitmapState = getImageFromAssets(product.images[0])
-        var showAr by remember { mutableStateOf(false) }
 
         AppTheme {
-            if (showAr) {
 
-            } else {
-                Card() {
-                    Scaffold(
-                        topBar = {
-                            Column {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    ElevatedButton(onClick = {
-                                        isActive.value = false
-                                    }) { Text("Назад") }
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                        modifier = Modifier.padding(end = 16.dp)
-                                    ) {
-                                        Icon(Icons.Filled.FavoriteBorder, null,)
-                                        Icon(Icons.Filled.Share, null)
-                                    }
-                                }
-                                HorizontalDivider()
-                            }
-                        },
-                        bottomBar = {
+            Card() {
+                Scaffold(
+                    topBar = {
+                        Column {
                             Row(
-                                horizontalArrangement = Arrangement.SpaceAround,
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                OutlinedButton(
-                                    onClick = {},
-                                    modifier = Modifier.fillMaxWidth(0.45f)
+                                ElevatedButton(onClick = {
+                                    isActive.value = false
+                                }) { Text("Назад") }
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                    modifier = Modifier.padding(end = 16.dp)
                                 ) {
-                                    Text("Купить", fontSize = AppTypography.bodyLarge.fontSize)
-                                }
-                                Button(onClick = {
-                                    SelectedModels.addModel(product)
-                                }, modifier = Modifier.fillMaxWidth(0.9f)) {
-                                    Text(
-                                        "Добавить в AR",
-                                        fontSize = AppTypography.bodyLarge.fontSize
-                                    )
+                                    Icon(Icons.Filled.FavoriteBorder, null,)
+                                    Icon(Icons.Filled.Share, null)
                                 }
                             }
+                            HorizontalDivider()
                         }
-                    ) { padding ->
-                        Box(
-                            modifier = Modifier.padding(padding),
-                            contentAlignment = Alignment.TopStart
+                    },
+                    bottomBar = {
+                        Row(
+                            horizontalArrangement = Arrangement.SpaceAround,
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            LazyColumn {
-                                if (null != bitmapState) {
-                                    val bitmap = bitmapState.asImageBitmap()
-                                    item {
-                                        Image(
-                                            bitmap = bitmap,
-                                            "assetsImage",
-                                            modifier = Modifier.size(393.dp),
-                                            colorFilter = null
-                                        )
-                                    }
-                                }
-                                item {
-                                    ElevatedCard(
-                                        modifier = Modifier.padding(16.dp),
-                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.onPrimary)
-                                    ) {
-                                        Column {
+                            OutlinedButton(
+                                onClick = {},
+                                modifier = Modifier.fillMaxWidth(0.45f)
+                            ) {
+                                Text("Купить", fontSize = AppTypography.bodyLarge.fontSize)
+                            }
+                            Button(onClick = {
+                                SelectedModels.addModel(product)
+                            }, modifier = Modifier.fillMaxWidth(0.9f)) {
+                                Text(
+                                    "Добавить в AR",
+                                    fontSize = AppTypography.bodyLarge.fontSize
+                                )
+                            }
+                        }
+                    }
+                ) { padding ->
+                    Box(
+                        modifier = Modifier.padding(padding),
+                        contentAlignment = Alignment.TopStart
+                    ) {
+                        LazyColumn {
+                            item {
+                                PhotoCarousel(product.images)
+                            }
+                            item {
+                                ElevatedCard(
+                                    modifier = Modifier.padding(16.dp),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.onPrimary)
+                                ) {
+                                    Column {
 
-                                            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary)) {
-                                                Text(
-                                                    product.shop.name_shop,
-                                                    modifier = Modifier.padding(2.dp)
-                                                )
-                                            }
+                                        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary)) {
                                             Text(
-                                                product.name,
-                                                fontSize = AppTypography.headlineMedium.fontSize,
+                                                product.shop.name_shop,
                                                 modifier = Modifier.padding(2.dp)
                                             )
                                         }
+                                        Text(
+                                            product.name,
+                                            fontSize = AppTypography.headlineMedium.fontSize,
+                                            modifier = Modifier.padding(2.dp)
+                                        )
                                     }
                                 }
-                                item {
-                                    ElevatedCard(modifier = Modifier.padding(horizontal = 16.dp)) {
-                                        Column(modifier = Modifier.padding(10.dp)) {
-                                            ExpandableText(
-                                                text = product.description,
-                                                showMoreText = "...->",
-                                                showLessText = "<-",
-                                                fontStyle = AppTypography.bodySmall.fontStyle
-                                            )
-                                            Text(
-                                                "Характеристики",
-                                                fontStyle = AppTypography.bodyLarge.fontStyle,
-                                                modifier = Modifier.padding(vertical = 6.dp)
-                                            )
-                                            Column {
-                                                for (attr in product.attributes) {
-                                                    Column {
-                                                        Row(
-                                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                                            modifier = Modifier.fillMaxWidth()
-                                                        ) {
-                                                            Text(attr.key)
-                                                            Text(attr.value)
-                                                        }
-                                                        HorizontalDivider()
+                            }
+                            item {
+                                ElevatedCard(modifier = Modifier.padding(horizontal = 16.dp)) {
+                                    Column(modifier = Modifier.padding(10.dp)) {
+                                        ExpandableText(
+                                            text = product.description,
+                                            showMoreText = "...->",
+                                            showLessText = "<-",
+                                            fontStyle = AppTypography.bodySmall.fontStyle
+                                        )
+                                        Text(
+                                            "Характеристики",
+                                            fontStyle = AppTypography.bodyLarge.fontStyle,
+                                            modifier = Modifier.padding(vertical = 6.dp)
+                                        )
+                                        Column {
+                                            for (attr in product.attributes) {
+                                                Column {
+                                                    Row(
+                                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                                        modifier = Modifier.fillMaxWidth()
+                                                    ) {
+                                                        Text(attr.key)
+                                                        Text(attr.value)
                                                     }
+                                                    HorizontalDivider()
                                                 }
                                             }
                                         }

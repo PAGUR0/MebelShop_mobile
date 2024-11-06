@@ -33,6 +33,15 @@ class MainViewModel(private val model: MainModel) : ViewModel() {
             }
         }
     }
+    fun filterProductsSearch(name: String){
+        _filteredProducts.value = _productList.value.filter { product ->
+            if (name == "") {
+                true
+            } else {
+                name == product.name
+            }
+        }
+    }
 }
 
 
