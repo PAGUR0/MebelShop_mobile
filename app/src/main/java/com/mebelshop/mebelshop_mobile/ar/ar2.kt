@@ -33,6 +33,7 @@ import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -50,10 +51,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
@@ -71,10 +75,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.google.android.filament.Engine
 import com.google.android.filament.View
@@ -88,6 +94,8 @@ import com.google.ar.core.TrackingFailureReason
 import com.mebelshop.mebelshop_mobile.DataMobile
 import com.mebelshop.mebelshop_mobile.Product
 import com.mebelshop.mebelshop_mobile.R
+import com.mebelshop.mebelshop_mobile.getImageFromAssets
+import com.mebelshop.mebelshop_mobile.ui.theme.AppTypography
 import dev.romainguy.kotlin.math.Float3
 import io.github.sceneview.ar.ARScene
 import io.github.sceneview.ar.ARSceneView
@@ -129,6 +137,7 @@ private const val kModelFile8 = "models/table_1.glb"
 
 
 private const val kMaxModelInstances = 10
+
 
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -323,7 +332,7 @@ fun AR2(selectedPathToModel: String? = null, onBack: () -> Unit) {
                             }
                             Log.d("=POSITION=", "${node!!.worldQuaternion.xyz}")
                         }
-                        )
+                    )
                 ) {
                     arSceneView = this
                 }
@@ -346,7 +355,8 @@ fun AR2(selectedPathToModel: String? = null, onBack: () -> Unit) {
                     Icon(
                         SearchIcon,
                         contentDescription = "Поиск",
-                        tint = Color.White
+                        tint = Color.White,
+                        modifier = Modifier.padding(2.5.dp)
                     )
                 }
 
@@ -368,7 +378,8 @@ fun AR2(selectedPathToModel: String? = null, onBack: () -> Unit) {
                 }
                 Column(
                     modifier = Modifier
-                        .align(Alignment.TopEnd)
+                        .align(Alignment.TopEnd),
+                    verticalArrangement = Arrangement.spacedBy(5.dp)
                 )
                 {
                     Button(
@@ -392,7 +403,7 @@ fun AR2(selectedPathToModel: String? = null, onBack: () -> Unit) {
 
                     Button(
                         modifier = Modifier
-                        .size(50.dp) ,
+                            .size(50.dp) ,
                         onClick = {
                             childNodes.clear()
                         },
@@ -702,14 +713,30 @@ fun CatalogItemCard(item: Product, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .padding(vertical = 2.5.dp)
             .clickable(onClick = onClick)
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(text = item.name)
+        Row (verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween){
+            val bitmapState = getImageFromAssets(item.images[0])
+            if (null != bitmapState) {
+                val bitmap = bitmapState.asImageBitmap()
+                Image(
+                    bitmap,
+                    contentDescription = "example photo",
+                    modifier = Modifier.size(40.dp, 40.dp)
+                )
+            }
+            Text(item.name)
+            Icon(Icons.Filled.FavoriteBorder, null)
         }
     }
+
+}
+
+@Preview
+@Composable
+fun CatalogItemCardPreview(){
+    CatalogItemCard(DataMobile().listProduct!![0], onClick = {})
 }
 
 @Composable
