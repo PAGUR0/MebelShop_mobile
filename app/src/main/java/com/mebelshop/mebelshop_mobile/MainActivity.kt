@@ -77,6 +77,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.mebelshop.mebelshop_mobile.ar.ARScreen
 import com.mebelshop.mebelshop_mobile.model.MainModel
+import com.mebelshop.mebelshop_mobile.model.SelectedModels
 import com.mebelshop.mebelshop_mobile.ui.theme.AppTheme
 import com.mebelshop.mebelshop_mobile.ui.theme.AppTypography
 import com.mebelshop.mebelshop_mobile.viewmodel.MainViewModel
@@ -285,62 +286,6 @@ class MainActivity : ComponentActivity() {
     }
 
 
-
-    @Composable
-    fun CategoryView(category: CategoryProduct, isActive: MutableState<Boolean>) {
-        val showedCard = remember { mutableStateOf(DataMobile().listProduct!![0])}
-        val showCard = remember { mutableStateOf(false) }
-        Box(
-            modifier = Modifier
-                .background(Color(0f, 0f, 0f, 0.5f))
-                .fillMaxSize(), contentAlignment = Alignment.Center
-        ) {
-            Card(modifier = Modifier.padding(16.dp)) {
-                Column {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        ElevatedButton(
-                            onClick = { isActive.value = false }
-                        ) {
-                            Text("Назад")
-                        }
-
-                        Text(
-                            category.name,
-                            fontSize = AppTypography.titleLarge.fontSize,
-                            modifier = Modifier.padding(end = 8.dp)
-                        )
-                    }
-                    HorizontalDivider()
-                    val products by remember {
-                        mutableStateOf(
-                            DataMobile().listProduct!!.filter { product -> category in product.categoryProduct }
-                        )
-                    }
-                    LazyVerticalGrid(columns = GridCells.Fixed(2)) {
-                        items(products) { product ->
-                            MainCardItem(
-                                product,
-                                CardType.Common,
-                                modifier = Modifier.padding(8.dp),
-                                showCard,
-                                showedCard
-                            )
-                        }
-                    }
-                }
-            }
-            if(showCard.value){
-                ProductCard(showedCard.value, showCard)
-            }
-        }
-
-
-    }
-
     @Composable
     fun ProductCard(product: Product, isActive: MutableState<Boolean>) {
         val bitmapState = getImageFromAssets(product.images[0])
@@ -385,10 +330,10 @@ class MainActivity : ComponentActivity() {
                                     Text("Купить", fontSize = AppTypography.bodyLarge.fontSize)
                                 }
                                 Button(onClick = {
-                                    showAr = true
+                                    SelectedModels.addModel(product)
                                 }, modifier = Modifier.fillMaxWidth(0.9f)) {
                                     Text(
-                                        "Посмотреть в AR",
+                                        "Добавить в AR",
                                         fontSize = AppTypography.bodyLarge.fontSize
                                     )
                                 }
@@ -463,7 +408,7 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
                                 }
-                                }
+                            }
                         }
                     }
                 }

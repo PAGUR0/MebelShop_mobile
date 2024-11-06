@@ -41,6 +41,7 @@ import com.google.ar.core.Plane
 import com.google.ar.core.TrackingFailureReason
 import com.mebelshop.mebelshop_mobile.Product
 import com.mebelshop.mebelshop_mobile.model.CatalogItem
+import com.mebelshop.mebelshop_mobile.model.SelectedModels
 import io.github.sceneview.ar.ARScene
 import io.github.sceneview.ar.arcore.createAnchorOrNull
 import io.github.sceneview.ar.arcore.getUpdatedPlanes
@@ -149,7 +150,7 @@ fun ARScreen() {
                                         materialLoader = materialLoader,
                                         modelInstances = modelInstances,
                                         anchor = anchor,
-                                        modelPath = ""
+                                        modelPath = selectedModel!!
                                     )
                                 }
                         }
@@ -166,9 +167,9 @@ fun ARScreen() {
                     },
                     sheetState = bottomSelectionSheetState
                 ) {
-//                    CatalogScreen(catalogItems) { modelPath ->
-//                        selectedModel = modelPath
-//                    }
+                    CatalogScreen(SelectedModels.getModels()) { modelPath ->
+                        selectedModel = modelPath
+                    }
                 }
             }
         }
