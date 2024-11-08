@@ -166,14 +166,14 @@ class ARModel {
         handlerThread.start()
 
         CoroutineScope(Dispatchers.IO).launch {
-
+            PixelCopy.request(arSceneView, bitmap, { copyResult ->
+                if (copyResult == PixelCopy.SUCCESS) {
+                    saveImageBitmapToGallery(context, bitmap)
+                }
+                handlerThread.quitSafely()
+            }, Handler(handlerThread.looper))
         }
-        PixelCopy.request(arSceneView, bitmap, { copyResult ->
-            if (copyResult === PixelCopy.SUCCESS) {
-                saveImageBitmapToGallery(context, bitmap)
-            }
-            handlerThread.quitSafely()
-        }, Handler(handlerThread.looper))
+
 
     }
 }

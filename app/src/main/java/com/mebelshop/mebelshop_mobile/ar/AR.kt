@@ -3,10 +3,6 @@ package com.mebelshop.mebelshop_mobile.ar
 import Arrow_left
 import Arrow_right
 import SearchIcon
-import android.content.Context
-import android.text.Selection
-import android.view.Display.Mode
-import android.view.SurfaceView
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -32,15 +28,12 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.ModalBottomSheetDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SheetState
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -54,7 +47,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewModelScope
+import androidx.navigation.NavController
+import androidx.navigation.NavDirections
 import com.google.ar.core.Config
 import com.google.ar.core.Frame
 import com.google.ar.core.Session
@@ -62,10 +56,12 @@ import com.google.ar.core.TrackingFailureReason
 import com.mebelshop.mebelshop_mobile.ARConfig
 import com.mebelshop.mebelshop_mobile.R
 import com.mebelshop.mebelshop_mobile.model.Product
+import com.mebelshop.mebelshop_mobile.model.SelectedModels
 import com.mebelshop.mebelshop_mobile.ui.theme.AppTheme
 import com.mebelshop.mebelshop_mobile.viewmodel.ARViewModel
 import dev.romainguy.kotlin.math.Float3
 import io.github.sceneview.ar.ARScene
+import io.github.sceneview.ar.ARSceneView
 import io.github.sceneview.ar.rememberARCameraNode
 import io.github.sceneview.ar.rememberARCameraStream
 import io.github.sceneview.model.ModelInstance
@@ -79,16 +75,14 @@ import io.github.sceneview.rememberOnGestureListener
 import io.github.sceneview.rememberRenderer
 import io.github.sceneview.rememberScene
 import io.github.sceneview.rememberView
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 val arConfig = ARConfig()
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AR(selectedPathToModel: String? = null, onBack: () -> Unit) {
-    val viewModel: ARViewModel = ARViewModel(LocalContext.current)
+fun AR(selectedPathToModel: String? = null, onBack: () -> Unit, navController: NavController) {
+    val viewModel = ARViewModel(LocalContext.current)
 
     val engine = rememberEngine()
     val modelLoader = rememberModelLoader(engine)
@@ -98,6 +92,9 @@ fun AR(selectedPathToModel: String? = null, onBack: () -> Unit) {
     val view = rememberView(engine)
     val renderer = rememberRenderer(engine)
     val scene = rememberScene(engine)
+    val ARView = remember{
+        mutableStateOf<ARSceneView?>(null)
+    }
     val collisionSystem = rememberCollisionSystem(view)
     val cameraStream = rememberARCameraStream(materialLoader)
     val modelInstances = remember { mutableListOf<ModelInstance>() }
@@ -107,9 +104,6 @@ fun AR(selectedPathToModel: String? = null, onBack: () -> Unit) {
 
     val bottomSelectionSheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
-
-    val listProduct by viewModel.listProduct.observeAsState(emptyList())
-    viewModel.loadListProduct()
 
     var trackingFailureReason by remember {
         mutableStateOf<TrackingFailureReason?>(null)
@@ -126,7 +120,7 @@ fun AR(selectedPathToModel: String? = null, onBack: () -> Unit) {
     var y_val by remember { mutableStateOf(0f) }
 
     BackHandler {
-        onBack()
+        navController.navigate("main_screen")
     }
 
     AppTheme {
@@ -190,7 +184,8 @@ fun AR(selectedPathToModel: String? = null, onBack: () -> Unit) {
                         }
                     )
                 ) {
-                    viewModel.setSurfaceView(this)
+                    ARView.value = this
+                    viewModel.setSurfaceView(ARView.value!!)
                 }
                 Button(
                     modifier = Modifier
@@ -406,7 +401,7 @@ fun AR(selectedPathToModel: String? = null, onBack: () -> Unit) {
                     onClick = {
                         planeRenderer = false
 
-                        viewModel.makePhoto()
+                        viewModel.makePhoto(ARView.value!!)
 
                         planeRenderer = true
                     },
@@ -424,7 +419,7 @@ fun AR(selectedPathToModel: String? = null, onBack: () -> Unit) {
                     },
                     sheetState = bottomSelectionSheetState
                 ) {
-                    CatalogScreen(listProduct) { modelPath ->
+                    CatalogScreen(SelectedModels.getModels()) { modelPath ->
                         selectedModel = modelPath
                         arConfig.isShowCrosshair = true
                     }

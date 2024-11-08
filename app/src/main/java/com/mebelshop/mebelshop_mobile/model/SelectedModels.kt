@@ -1,6 +1,5 @@
 package com.mebelshop.mebelshop_mobile.model
 
-import com.mebelshop.mebelshop_mobile.Product
 
 object SelectedModels {
     private val modelsList = mutableListOf<Product>()

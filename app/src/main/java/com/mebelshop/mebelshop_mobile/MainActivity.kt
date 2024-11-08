@@ -1,7 +1,14 @@
 package com.mebelshop.mebelshop_mobile
 
+import android.annotation.SuppressLint
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -69,13 +76,18 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.app.NotificationCompat
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.mebelshop.mebelshop_mobile.ar.ARScreen
+import com.mebelshop.mebelshop_mobile.ar.AR
+import com.mebelshop.mebelshop_mobile.model.CategoryProduct
+import com.mebelshop.mebelshop_mobile.model.DataMobile
 import com.mebelshop.mebelshop_mobile.model.MainModel
+import com.mebelshop.mebelshop_mobile.model.Product
 import com.mebelshop.mebelshop_mobile.model.SelectedModels
 import com.mebelshop.mebelshop_mobile.ui.theme.AppTheme
 import com.mebelshop.mebelshop_mobile.ui.theme.AppTypography
@@ -96,7 +108,7 @@ class MainActivity : ComponentActivity() {
                         MainScreen(viewModel, navController)
                     }
                     composable("ar_screen") {
-                        ARScreen()
+                        AR(onBack = {}, navController = navController)
                     }
                 }
             }
@@ -271,10 +283,16 @@ class MainActivity : ComponentActivity() {
     }
 
 
+    @Preview
+    @Composable
+    fun CardMPreview(){
+        MainCardItem(DataMobile().listProduct!![0], CardType.LikedDiscount, showCard = remember {mutableStateOf<Boolean>(true)}, showedCard = remember { mutableStateOf(DataMobile().listProduct!![0])}, modifier = Modifier)
+    }
+
 
     @Composable
     fun MainScreen(viewModel: MainViewModel, navController: NavController) {
-        val filteredProducts by viewModel.filteredProducts.collectAsState(emptyList())
+        val filteredProducts by viewModel.filteredProducts.collectAsState(listOf<Product>())
         val products = remember { mutableStateListOf<Product>() }
 
         LaunchedEffect(filteredProducts) {
@@ -322,6 +340,7 @@ class MainActivity : ComponentActivity() {
     }
 
 
+    @SuppressLint("ObsoleteSdkInt")
     @Composable
     fun ProductCard(product: Product, isActive: MutableState<Boolean>) {
 
@@ -351,12 +370,53 @@ class MainActivity : ComponentActivity() {
                         }
                     },
                     bottomBar = {
+                        var n by remember { mutableStateOf(1) }
                         Row(
                             horizontalArrangement = Arrangement.SpaceAround,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             OutlinedButton(
-                                onClick = {},
+                                onClick = {
+                                    val channelId = "my_channel_id"
+                                    val channelName = "My Channel"
+                                    val channelDescription = "Channel Description"
+
+
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                        val channel = NotificationChannel(
+                                            channelId,
+                                            channelName,
+                                            NotificationManager.IMPORTANCE_HIGH
+                                        ).apply {
+                                            description = channelDescription
+                                        }
+                                        val notificationManager = getSystemService(NotificationManager::class.java)
+                                        notificationManager.createNotificationChannel(channel)
+                                    }
+
+
+                                    val intent = Intent(this@MainActivity, MainActivity::class.java)
+                                    val pendingIntent = PendingIntent.getActivity(
+                                        this@MainActivity,
+                                        0,
+                                        intent,
+                                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                                    )
+
+                                    val notification = NotificationCompat.Builder(this@MainActivity, channelId)
+                                        .setContentTitle("КАКОЙ ХОРОШИЙ ДЕНЬ")
+                                        .setContentText("ЧТОБ ПОЙТИ НА СВО")
+                                        .setSmallIcon(android.R.drawable.ic_dialog_info)
+                                        .setContentIntent(pendingIntent)
+                                        .setAutoCancel(true)
+                                        .setPriority(NotificationCompat.PRIORITY_HIGH)
+                                        .addAction(android.R.drawable.ic_secure, "Открыть", pendingIntent)
+                                        .build()
+
+                                    // Отправка уведомления
+                                    val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                                    notificationManager.notify(1, notification)
+                                },
                                 modifier = Modifier.fillMaxWidth(0.45f)
                             ) {
                                 Text("Купить", fontSize = AppTypography.bodyLarge.fontSize)

@@ -1,10 +1,10 @@
 package com.mebelshop.mebelshop_mobile.viewmodel
 
 import androidx.lifecycle.ViewModel
-import com.mebelshop.mebelshop_mobile.CategoryProduct
-import com.mebelshop.mebelshop_mobile.DataMobile
-import com.mebelshop.mebelshop_mobile.Product
+import com.mebelshop.mebelshop_mobile.model.CategoryProduct
+import com.mebelshop.mebelshop_mobile.model.DataMobile
 import com.mebelshop.mebelshop_mobile.model.MainModel
+import com.mebelshop.mebelshop_mobile.model.Product
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 

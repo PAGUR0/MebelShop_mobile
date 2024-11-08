@@ -1,12 +1,20 @@
 package com.mebelshop.mebelshop_mobile.viewmodel
 
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
+import android.util.Log
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.google.android.filament.Engine
 import com.google.ar.core.Frame
+import com.mebelshop.mebelshop_mobile.MainActivity
 import com.mebelshop.mebelshop_mobile.ar.arConfig
 import com.mebelshop.mebelshop_mobile.model.ARModel
 import com.mebelshop.mebelshop_mobile.model.Product
@@ -47,7 +55,7 @@ class ARViewModel(context: Context): ViewModel() {
         ARModel().refreshListProduct()
     }
 
-    fun makePhoto() {
+    fun makePhoto(view: ARSceneView) {
         arModel.makeBitmapFromScreenshot(view, context)
     }
 
