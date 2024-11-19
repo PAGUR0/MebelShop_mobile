@@ -30,7 +30,6 @@ import io.github.sceneview.node.Node
 
 class ARViewModel(context: Context): ViewModel() {
     private val arModel: ARModel = ARModel()
-    val listProduct: LiveData<List<Product>> get() = ARModel().listProduct
 
     val centerX: Float
     val centerY: Float
@@ -41,18 +40,11 @@ class ARViewModel(context: Context): ViewModel() {
         centerY = y
     }
 
-    private val _isShowBottomSheet = MutableLiveData<Boolean>(false)
-    val isShowBottomSheet: LiveData<Boolean> get() = _isShowBottomSheet
-
     private lateinit var view: ARSceneView
     private var context = context
 
     fun setSurfaceView(view: ARSceneView) {
         this.view = view
-    }
-
-    fun loadListProduct() {
-        ARModel().refreshListProduct()
     }
 
     fun makePhoto(view: ARSceneView) {
@@ -66,15 +58,14 @@ class ARViewModel(context: Context): ViewModel() {
         materialLoader: MaterialLoader,
         modelInstances: MutableList<ModelInstance>,
         frame: Frame,
-        createModelFlag: Boolean,
         selectedModel: String?,
-        duplicateNode: Boolean,
         selectedNode: ModelNode?
     ) {
-        if (duplicateNode) {
+        Log.d("=SELECTED_MODEL=", "selected_model: $selectedModel")
+        if (arConfig.isModelDuplicate) {
             handleDuplicationNode(childNodes, engine, modelLoader, materialLoader, modelInstances,
                 frame, selectedNode)
-        } else if (createModelFlag) {
+        } else if (arConfig.isModelSelected) {
             handleNewNode(childNodes, engine, modelLoader, materialLoader, modelInstances,
                 frame, selectedModel)
         }
@@ -90,6 +81,7 @@ class ARViewModel(context: Context): ViewModel() {
         frame: Frame?,
         selectedModel: String?
     ) {
+        Log.d("=SELECTED_MODEL=", "selected_model: $selectedModel")
         selectedModel?.let { modelPath ->
             if (modelInstances.isNotEmpty()) {
                 modelInstances.clear()

@@ -35,7 +35,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -109,7 +108,7 @@ fun AR(selectedPathToModel: String? = null, onBack: () -> Unit, navController: N
         mutableStateOf<TrackingFailureReason?>(null)
     }
 
-    var selectedModel: String? = null
+    var selectedModel by remember { mutableStateOf<String?>(null) }
 
     if (selectedPathToModel != null) {
         selectedModel = selectedPathToModel
@@ -163,7 +162,7 @@ fun AR(selectedPathToModel: String? = null, onBack: () -> Unit, navController: N
                     },
                     onGestureListener = rememberOnGestureListener(
                         onSingleTapConfirmed = { _, node ->
-                            if (arConfig.isModelDuplicate || arConfig.isModelSelected || selectedModel != null) {
+                            if (arConfig.isModelSelected || arConfig.isModelDuplicate) {
                                 viewModel.onSingleTapConfirmed(
                                     childNodes = childNodes,
                                     engine = engine,
@@ -171,9 +170,7 @@ fun AR(selectedPathToModel: String? = null, onBack: () -> Unit, navController: N
                                     materialLoader = materialLoader,
                                     modelInstances = modelInstances,
                                     frame = frame!!,
-                                    createModelFlag = arConfig.isModelSelected,
                                     selectedModel = selectedModel,
-                                    duplicateNode = arConfig.isModelDuplicate,
                                     selectedNode = selectedNode
                                 )
                                 arConfig.isModelDuplicate = false
@@ -181,6 +178,9 @@ fun AR(selectedPathToModel: String? = null, onBack: () -> Unit, navController: N
                                 selectedModel = null
                             }
                             selectedNode = viewModel.nodeToModelNode(node)
+                            if (selectedNode != null) {
+                                arConfig.isShowMenuModel = false
+                            }
                         }
                     )
                 ) {
@@ -428,9 +428,6 @@ fun AR(selectedPathToModel: String? = null, onBack: () -> Unit, navController: N
         }
     }
 }
-
-
-
 @Composable
 fun CatalogItemCard(item: Product, onClick: () -> Unit) {
     Card(
@@ -445,7 +442,6 @@ fun CatalogItemCard(item: Product, onClick: () -> Unit) {
         }
     }
 }
-
 @Composable
 fun CatalogScreen(items: List<Product>, onItemSelected: (String) -> Unit) {
     LazyColumn(modifier = Modifier.fillMaxSize()) {

@@ -31,14 +31,6 @@ import java.io.OutputStream
 private const val kMaxModelInstances = 10
 
 class ARModel {
-    private var _listProduct = MutableLiveData<List<Product>>()
-    val listProduct: LiveData<List<Product>> get() = _listProduct
-
-
-    fun refreshListProduct() {
-        _listProduct.postValue(DataMobile().listProduct)
-    }
-
     fun createAnchorNode(
         engine: Engine,
         modelLoader: ModelLoader,
