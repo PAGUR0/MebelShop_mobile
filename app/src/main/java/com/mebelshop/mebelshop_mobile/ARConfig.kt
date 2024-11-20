@@ -6,5 +6,6 @@ data class ARConfig(
     var isModelDuplicate: Boolean = false,
     var isShowMenuModel: Boolean = false,
     var isShowCrosshair: Boolean = false,
-    var isShowBottomSheet: Boolean = false
+    var isShowBottomSheet: Boolean = false,
+    var isCreated: Boolean = false
 )

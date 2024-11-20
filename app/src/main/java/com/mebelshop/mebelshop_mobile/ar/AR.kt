@@ -21,6 +21,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -81,26 +83,39 @@ val arConfig = ARConfig()
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AR(selectedPathToModel: String? = null, onBack: () -> Unit, navController: NavController) {
+fun AR(selectedPathToModel: String? = if(SelectedModels.getModels().isEmpty()) null else SelectedModels.getModels()[0].model, onBack: () -> Unit, navController: NavController) {
     val viewModel = ARViewModel(LocalContext.current)
 
     val engine = rememberEngine()
     val modelLoader = rememberModelLoader(engine)
     val materialLoader = rememberMaterialLoader(engine)
     val cameraNode = rememberARCameraNode(engine)
+    // start
     val childNodes = rememberNodes()
+    // skip
     val view = rememberView(engine)
+    // stop skip
     val renderer = rememberRenderer(engine)
     val scene = rememberScene(engine)
+    // skip
     val ARView = remember{
         mutableStateOf<ARSceneView?>(null)
     }
+    // stop skip
     val collisionSystem = rememberCollisionSystem(view)
     val cameraStream = rememberARCameraStream(materialLoader)
     val modelInstances = remember { mutableListOf<ModelInstance>() }
+    //skip
     var frame by remember { mutableStateOf<Frame?>(null) }
+    // stop skip
     var selectedNode by remember { mutableStateOf<ModelNode?>(null) }
+    // end
     var planeRenderer by remember { mutableStateOf(true) }
+
+    // all after start - ARState
+    // Save it in dataClass or etc
+    // get = set it from ARState
+    // set = copying from ARState
 
     val bottomSelectionSheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
@@ -108,7 +123,6 @@ fun AR(selectedPathToModel: String? = null, onBack: () -> Unit, navController: N
     var trackingFailureReason by remember {
         mutableStateOf<TrackingFailureReason?>(null)
     }
-
     var selectedModel: String? = null
 
     if (selectedPathToModel != null) {
@@ -118,10 +132,6 @@ fun AR(selectedPathToModel: String? = null, onBack: () -> Unit, navController: N
     }
 
     var y_val by remember { mutableStateOf(0f) }
-
-    BackHandler {
-        navController.navigate("main_screen")
-    }
 
     AppTheme {
         Scaffold { contentPadding ->
@@ -151,6 +161,7 @@ fun AR(selectedPathToModel: String? = null, onBack: () -> Unit, navController: N
                         config.instantPlacementMode = Config.InstantPlacementMode.LOCAL_Y_UP
                         config.lightEstimationMode =
                             Config.LightEstimationMode.ENVIRONMENTAL_HDR
+
                     },
                     cameraNode = cameraNode,
                     planeRenderer = planeRenderer,
@@ -160,6 +171,11 @@ fun AR(selectedPathToModel: String? = null, onBack: () -> Unit, navController: N
                     },
                     onSessionUpdated = { _, updatedFrame ->
                         frame = updatedFrame
+                    },
+                    onSessionPaused = { session: Session ->
+                        viewModel.setState(session)
+                    },
+                    onSessionCreated = {
                     },
                     onGestureListener = rememberOnGestureListener(
                         onSingleTapConfirmed = { _, node ->
@@ -184,18 +200,18 @@ fun AR(selectedPathToModel: String? = null, onBack: () -> Unit, navController: N
                         }
                     )
                 ) {
-                    ARView.value = this
-                    viewModel.setSurfaceView(ARView.value!!)
+                    if (!arConfig.isCreated){
+                        ARView.value = this
+                        viewModel.setSurfaceView(ARView.value!!)
+                        arConfig.isCreated = true
+                    }
                 }
                 Button(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .wrapContentSize(),
                     onClick = {
-                        arConfig.isShowBottomSheet = true
-                        scope.launch {
-                            bottomSelectionSheetState.show()
-                        }
+                        navController.navigate("main_screen")
                     },
                     colors = ButtonDefaults.buttonColors(
                         colorResource(R.color.green),
@@ -205,7 +221,7 @@ fun AR(selectedPathToModel: String? = null, onBack: () -> Unit, navController: N
                     shape = CircleShape
                 ) {
                     Icon(
-                        SearchIcon,
+                        Icons.Filled.Add,
                         contentDescription = "Поиск",
                         tint = Color.White
                     )
@@ -266,7 +282,7 @@ fun AR(selectedPathToModel: String? = null, onBack: () -> Unit, navController: N
                     }
 
                     if (arConfig.isShowMenuModel) {
-                        selectedNode!!.isRotationEditable = true
+                        selectedNode?.isRotationEditable = true
                         Column (
                         ) {
                             Box(

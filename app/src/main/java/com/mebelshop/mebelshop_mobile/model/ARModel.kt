@@ -10,19 +10,26 @@ import android.provider.MediaStore
 import android.view.PixelCopy
 import android.widget.Toast
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.google.android.filament.Engine
+import com.google.android.filament.Renderer
+import com.google.android.filament.Scene
 import com.google.android.filament.gltfio.FilamentAsset
 import com.google.ar.core.Anchor
+import com.google.ar.core.Session
 import io.github.sceneview.ar.ARSceneView
+import io.github.sceneview.ar.camera.ARCameraStream
 import io.github.sceneview.ar.node.AnchorNode
+import io.github.sceneview.collision.CollisionSystem
 import io.github.sceneview.loaders.MaterialLoader
 import io.github.sceneview.loaders.ModelLoader
 import io.github.sceneview.model.ModelInstance
 import io.github.sceneview.node.CubeNode
 import io.github.sceneview.node.ModelNode
+import io.github.sceneview.node.Node
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -34,6 +41,25 @@ class ARModel {
     private var _listProduct = MutableLiveData<List<Product>>()
     val listProduct: LiveData<List<Product>> get() = _listProduct
 
+    private val arState = ARState()
+
+//    fun initArState(childNodes: SnapshotStateList<Node>, renderer: Renderer, scene: Scene,
+//                    collisionSystem: CollisionSystem, cameraStream: ARCameraStream, modelInstances: ModelInstance) {
+//        arState.initChildNodes(childNodes)
+//        arState.initRenderer(renderer)
+//        arState.initScene(scene)
+//        arState.initCollisionSystem(collisionSystem)
+//        arState.initCameraStream(cameraStream)
+//        arState.initModelInstances(modelInstances)
+//    }
+
+    fun initArState(session: Session) {
+        arState.initSession(session)
+    }
+
+    fun getSession(): Session {
+        return arState.getSession()
+    }
 
     fun refreshListProduct() {
         _listProduct.postValue(DataMobile().listProduct)

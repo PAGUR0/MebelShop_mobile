@@ -1,5 +1,6 @@
 package com.mebelshop.mebelshop_mobile.viewmodel
 
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -13,7 +14,10 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.google.android.filament.Engine
+import com.google.android.filament.Renderer
+import com.google.android.filament.Scene
 import com.google.ar.core.Frame
+import com.google.ar.core.Session
 import com.mebelshop.mebelshop_mobile.MainActivity
 import com.mebelshop.mebelshop_mobile.ar.arConfig
 import com.mebelshop.mebelshop_mobile.model.ARModel
@@ -21,6 +25,8 @@ import com.mebelshop.mebelshop_mobile.model.Product
 import io.github.sceneview.ar.ARSceneView
 import io.github.sceneview.ar.arcore.createAnchorOrNull
 import io.github.sceneview.ar.arcore.isValid
+import io.github.sceneview.ar.camera.ARCameraStream
+import io.github.sceneview.collision.CollisionSystem
 import io.github.sceneview.loaders.MaterialLoader
 import io.github.sceneview.loaders.ModelLoader
 import io.github.sceneview.model.ModelInstance
@@ -41,10 +47,24 @@ class ARViewModel(context: Context): ViewModel() {
         centerY = y
     }
 
+//    fun createArState(childNodes: SnapshotStateList<Node>, renderer: Renderer, scene: Scene,
+//                      collisionSystem: CollisionSystem, cameraStream: ARCameraStream, modelInstances: ModelInstance) {
+//
+//    }
+
+    fun setState(session: Session) {
+        arModel.initArState(session)
+    }
+
+    fun getState(): Session {
+        return arModel.getSession()
+    }
+
     private val _isShowBottomSheet = MutableLiveData<Boolean>(false)
     val isShowBottomSheet: LiveData<Boolean> get() = _isShowBottomSheet
 
-    private lateinit var view: ARSceneView
+    lateinit var view: ARSceneView
+    @SuppressLint("StaticFieldLeak")
     private var context = context
 
     fun setSurfaceView(view: ARSceneView) {

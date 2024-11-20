@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -52,12 +51,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -103,7 +102,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             AppTheme(dynamicColor = false){
                 val navController = rememberNavController()
-                NavHost(navController, startDestination = "main_screen") {
+                NavHost(navController, startDestination = "ar_screen") {
                     composable("main_screen") {
                         MainScreen(viewModel, navController)
                     }
@@ -249,44 +248,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @Composable
-    fun SearchBar(
-        query: String,
-        onQueryChange: (String) -> Unit,
-        onSearch: () -> Unit
-    ) {
-        var text by remember { mutableStateOf(query) }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            TextField(
-                value = text,
-                onValueChange = {
-                    text = it
-                    onQueryChange(it) // Обновляем состояние родителя
-                },
-                placeholder = { Text("Поиск...") },
-                modifier = Modifier.weight(1f),
-                singleLine = true
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Button(onClick = {
-                onSearch() // Выполняем поиск
-            }) {
-                Text("Поиск")
-            }
-        }
-    }
-
 
     @Preview
     @Composable
     fun CardMPreview(){
-        MainCardItem(DataMobile().listProduct!![0], CardType.LikedDiscount, showCard = remember {mutableStateOf<Boolean>(true)}, showedCard = remember { mutableStateOf(DataMobile().listProduct!![0])}, modifier = Modifier)
+        MainCardItem(DataMobile().listProduct!![0], CardType.LikedDiscount, showCard = remember {mutableStateOf(true)}, showedCard = remember { mutableStateOf(DataMobile().listProduct!![0])}, modifier = Modifier)
     }
 
 
@@ -331,9 +297,8 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
-
             if (showCard.value) {
-                ProductCard(showedCard.value, showCard)
+                ProductCard(showedCard.value, showCard, navController)
             }
 
         }
@@ -342,11 +307,11 @@ class MainActivity : ComponentActivity() {
 
     @SuppressLint("ObsoleteSdkInt")
     @Composable
-    fun ProductCard(product: Product, isActive: MutableState<Boolean>) {
+    fun ProductCard(product: Product, isActive: MutableState<Boolean>, navController: NavController ) {
 
         AppTheme {
 
-            Card() {
+            Card {
                 Scaffold(
                     topBar = {
                         Column {
@@ -370,52 +335,13 @@ class MainActivity : ComponentActivity() {
                         }
                     },
                     bottomBar = {
-                        var n by remember { mutableStateOf(1) }
                         Row(
                             horizontalArrangement = Arrangement.SpaceAround,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             OutlinedButton(
                                 onClick = {
-                                    val channelId = "my_channel_id"
-                                    val channelName = "My Channel"
-                                    val channelDescription = "Channel Description"
 
-
-                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                        val channel = NotificationChannel(
-                                            channelId,
-                                            channelName,
-                                            NotificationManager.IMPORTANCE_HIGH
-                                        ).apply {
-                                            description = channelDescription
-                                        }
-                                        val notificationManager = getSystemService(NotificationManager::class.java)
-                                        notificationManager.createNotificationChannel(channel)
-                                    }
-
-
-                                    val intent = Intent(this@MainActivity, MainActivity::class.java)
-                                    val pendingIntent = PendingIntent.getActivity(
-                                        this@MainActivity,
-                                        0,
-                                        intent,
-                                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                                    )
-
-                                    val notification = NotificationCompat.Builder(this@MainActivity, channelId)
-                                        .setContentTitle("КАКОЙ ХОРОШИЙ ДЕНЬ")
-                                        .setContentText("ЧТОБ ПОЙТИ НА СВО")
-                                        .setSmallIcon(android.R.drawable.ic_dialog_info)
-                                        .setContentIntent(pendingIntent)
-                                        .setAutoCancel(true)
-                                        .setPriority(NotificationCompat.PRIORITY_HIGH)
-                                        .addAction(android.R.drawable.ic_secure, "Открыть", pendingIntent)
-                                        .build()
-
-                                    // Отправка уведомления
-                                    val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                                    notificationManager.notify(1, notification)
                                 },
                                 modifier = Modifier.fillMaxWidth(0.45f)
                             ) {
@@ -423,6 +349,7 @@ class MainActivity : ComponentActivity() {
                             }
                             Button(onClick = {
                                 SelectedModels.addModel(product)
+                                navController.popBackStack()
                             }, modifier = Modifier.fillMaxWidth(0.9f)) {
                                 Text(
                                     "Добавить в AR",
@@ -516,7 +443,7 @@ class MainActivity : ComponentActivity() {
     ) {
         var isExpanded by remember { mutableStateOf(false) }
         var clickable by remember { mutableStateOf(false) }
-        var lastCharIndex by remember { mutableStateOf(0) }
+        var lastCharIndex by remember { mutableIntStateOf(0) }
         Box(modifier = Modifier
             .clickable(clickable) {
                 isExpanded = !isExpanded
