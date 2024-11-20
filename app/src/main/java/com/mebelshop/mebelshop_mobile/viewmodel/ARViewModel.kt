@@ -110,6 +110,7 @@ class ARViewModel(context: Context): ViewModel() {
         frame: Frame?,
         selectedModel: String?
     ) {
+        Log.d("=SELECTED_MODEL=", "selected_model: $selectedModel")
         selectedModel?.let { modelPath ->
             if (modelInstances.isNotEmpty()) {
                 modelInstances.clear()
